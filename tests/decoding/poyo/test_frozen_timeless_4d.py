@@ -2,9 +2,11 @@
 
 Two latent shapes flow through ``_encode_with_timestamps_4d``:
 
-  * 3D ``[B, U, D]`` — the PCA baseline. The wrapper splices a singleton time
-    axis (``T'=1``) and rewrites the upstream-broken ``[B, N]`` neuron-axis
-    timestamps into ``[B, 1]`` window centers.
+  * 3D ``[B, U, D]`` — the PCA baseline in ntt releases that return it 3D. The
+    wrapper splices a singleton time axis (``T'=1``) and rewrites the
+    ``[B, N]`` neuron-axis timestamps into ``[B, 1]`` window centers. Releases
+    whose PCA ``encode`` already returns ``[B, 1, U, D]`` take the 4D path below;
+    the tests check both give the same shapes and window-center timestamps.
   * 4D ``[B, 1, 1, D]`` — ``simple_vae`` (also ``has_time_dim=False`` but emits
     a singleton time axis directly). These are already canonical and are passed
     through unchanged.
@@ -60,14 +62,16 @@ def _simple_vae_frozen(latent_dim: int = 8) -> FrozenNTTTokenizer:
 # --- PCA baseline: 3D -> spliced 4D + window-center timestamps ---
 
 
-def test_pca_spec_is_timeless_3d():
-    """Guard the premise: PCA spec is has_time_dim=False and encode is 3D."""
+def test_pca_spec_is_timeless():
+    """Guard the premise: PCA spec is has_time_dim=False and encode is either
+    3D ``[B, U, D]`` or canonical 4D ``[B, 1, U, D]`` (ntt releases differ);
+    the wrapper handles both."""
     from ntt.core.model.tokenizer.validation import make_dummy_input
 
     frozen = _pca_frozen()
     assert frozen.tokenizer.spec.has_time_dim is False
     raw = frozen.tokenizer.encode(make_dummy_input(frozen.tokenizer.spec))
-    assert raw.ndim == 3  # [B, U, D]
+    assert raw.ndim == 3 or (raw.ndim == 4 and raw.shape[1] == 1)
 
 
 def test_pca_encode_with_timestamps_4d_splices_singleton_time_axis():
@@ -77,7 +81,7 @@ def test_pca_encode_with_timestamps_4d_splices_singleton_time_axis():
     dummy = make_dummy_input(frozen.tokenizer.spec)
 
     latents, ts = frozen._encode_with_timestamps_4d(dummy)
-    # 3D [B, U, D] -> [B, T'=1, U, D].
+    # [B, T'=1, U, D], whether ntt's encode returned 3D (spliced) or 4D.
     assert latents.ndim == 4
     assert latents.shape[1] == 1
     assert latents.shape[2] == 8  # U preserved
