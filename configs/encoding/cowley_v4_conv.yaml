@@ -1,0 +1,22 @@
+defaults:
+  - data: cowley_v4
+  - model: conv_core_readout
+  - trainer: default
+  - _self_
+
+# Match Cowley et al. 2026 training procedure:
+data:
+  response_offset: 0.050 # skip first 50ms (V4 neural latency)
+  response_window: 0.100 # 100ms window → covers 50-150ms post-stimulus
+  bin_size: 0.100 # bin_size = response_window → T=1 (scalar rate)
+  train_on_averaged: true # train on trial-averaged responses
+  min_snr: 0.15 # match Cowley et al. SNR threshold (Pospisil & Bair 2021)
+
+tokenizer:
+  enabled: false
+
+tags:
+  model: "conv_core_readout"
+  dataset: "cowley_v4"
+
+description: "Cowley V4 conv baseline: Stacked 2D core + Gaussian readout, MSE on rates."

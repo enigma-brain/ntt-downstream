@@ -1,0 +1,15 @@
+# @package _global_
+# Pretrained Hiera for 224x224 images (resizes data from native 112x112).
+# The weights are downloaded from Meta (facebookresearch/hiera) and are licensed
+# CC BY-NC 4.0 (non-commercial); the Hiera code is Apache-2.0. The default
+# from-scratch backbone (hiera_small_112) needs no pretrained weights.
+model:
+  pretrained_backbone: "hiera_tiny_224"
+  pretrained_backbone_kwargs: {}
+  freeze_backbone: true
+  image_size: [224, 224]
+  hiera_in_chans: 3
+  # Patch/spatial params inherited from pretrained weights
+
+data:
+  image_size: [224, 224]

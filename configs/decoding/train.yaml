@@ -1,0 +1,5 @@
+defaults:
+  - defaults
+  - model: poyo_1.3M
+  - tokenizer: fake
+  - _self_

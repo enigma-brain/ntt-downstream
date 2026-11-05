@@ -1,0 +1,27 @@
+# Curated decode entrypoint — the stable contract config. Composes the decoding
+# tree (configs/decoding/train.yaml) and pins the POYO defaults as data, not code.
+# The launcher loads this as the primary config; raw Hydra overrides still apply on top.
+#
+# This config lives in configs/cli/, a different search-path dir than the group
+# folders (configs/decoding/), so all task-tree references are ABSOLUTE (leading
+# slash). `override /model` flips the GROUP selection that /train already made;
+# a plain `model: …` body value would NOT change the group and would be wrong.
+defaults:
+  - /train                                    # configs/decoding/train.yaml root
+  - override /model: poyo_1.3M_no_crossattn   # flip default arch — owned here as data, not in launcher code
+  - _self_
+
+# Pinned contract defaults. `_self_` is last in the defaults list, so these body
+# values win over the group-composed tokenizer block. `unit_embedding_mode: add`
+# is also the fake default, but we pin it explicitly because it is our owned
+# contract default and other tokenizer groups differ (e.g. frozen uses `none`).
+# `sentinels: false` overrides the fake tokenizer's `sentinels: true`.
+#
+# ORDERING INVARIANT: keep these AFTER any tokenizer group (re)selection in the
+# defaults list. The launcher's --tokenizer-kind maps to a `tokenizer=<group>`
+# override, which Hydra inserts at /train's position (above _self_), so these
+# body pins still win. Don't move a tokenizer group selection below _self_, or
+# the group's values would silently override these with no error.
+tokenizer:
+  unit_embedding_mode: add
+  sentinels: false

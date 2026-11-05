@@ -1,0 +1,17 @@
+# POYO 1.3M without encoder cross-attention.
+# Input tokens go directly into the self-attention `proc_layers`; the decoder
+# cross-attends to the processed input tokens. `latent_step` /
+# `num_latents_per_step` are accepted by `POYO.__init__` but unused at forward
+# time in this variant.
+_target_: ntt_downstream.decoding.backends.poyo.model.POYOWithEmbeddingBypass_wo_crossattention
+sequence_length: 1.0
+latent_step: 0.125
+num_latents_per_step: 16
+dim: 64
+depth: 6
+dim_head: 64
+cross_heads: 2
+self_heads: 8
+ffn_dropout: 0.2
+lin_dropout: 0.4
+atn_dropout: 0.2

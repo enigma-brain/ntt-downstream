@@ -1,0 +1,31 @@
+# @package _global_
+model:
+  model_type: "image_encoding"
+  # n_time_bins is auto-computed from data.response_window / data.bin_size at runtime
+
+  # Readout (matches cowley_v4_diffusion conventions)
+  dim_head: 48
+  num_heads: 4
+  readout_mlp_ratio: 4
+  readout_use_session_embedding: true
+  readout_use_subject_embedding: true
+  readout_use_gated_ffn: false
+
+  # Loss: energy score (EAR, arXiv:2505.07812) in tokenizer latent space
+  loss_mode: "energy"
+  # token_prediction_dim auto-falls-back to energy.target_channels (model_factory.py)
+  token_prediction_dim: null
+  energy:
+    target_channels: null # null → auto-derive from tokenizer_wrapper.latent_dim
+    z_channels: null # null → auto-derive (matches target_channels)
+    width: 256 # generator MLP hidden dim (EAR paper: 1024)
+    depth: 3 # generator AdaLN block count
+    noise_channels: 64 # eps ~ U[-0.5, 0.5]^noise_channels
+    alpha: 1.5 # energy-score exponent; must be in [1.0, 2.0)
+    train_temperature: 1.0 # multiplier on diversity term (>0)
+    grad_checkpointing: false
+
+  # Variance-reduction repetition of the (target, z) pair before the loss.
+  # Energy already draws 2 noise samples per token internally; this stacks ON TOP
+  # of that, so effective generator FLOPs = diffusion_batch_mul * 2 per token.
+  diffusion_batch_mul: 4

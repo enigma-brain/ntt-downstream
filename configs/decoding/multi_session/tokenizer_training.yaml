@@ -1,0 +1,27 @@
+# Frozen-tokenizer variant for the multi-session calibration orchestrator.
+#
+# Inherits all shared hparams from the single-session
+# configs/decoding/single_session/training.yaml; only the variant-specific
+# differences are listed below.
+#
+# `base_max_steps` is intentionally bumped relative to the single-session
+# default (3400). With ~4× the train pool, the same step count would
+# train through ~1/4 the per-session epochs, which under-fits the
+# session-specific structure. 6800 ≈ 2× single keeps wall-time bounded
+# while giving each session ~1/2 the single-session epoch budget — adjust
+# upward if val curves haven't plateaued.
+
+extends: ../single_session/training.yaml
+
+model:
+  no_crossattn: true
+
+training:
+  ft_max_steps: 800
+  base_max_steps: 6800
+  ft_modes: [full]
+  seeds: [42, 43]
+
+tokenizer:
+  kind: frozen
+  sentinels: false

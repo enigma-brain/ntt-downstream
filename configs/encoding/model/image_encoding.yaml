@@ -1,0 +1,53 @@
+# @package _global_
+model:
+  model_type: "image_encoding"
+  # n_time_bins is auto-computed from data.response_window / data.bin_size at runtime
+
+  # Readout
+  dim_head: 48
+  num_heads: 4
+  readout_mlp_ratio: 4
+  readout_use_session_embedding: true
+  readout_use_subject_embedding: true
+  readout_use_gated_ffn: false
+
+  # Output activation
+  learnable_softplus: false # true = ParametrizedSoftplus(w, b), false = nn.Softplus()
+  softplus_beta: 0.1 # sharpness; used as init `a` when learnable
+
+  # Readout layer stack: list of "cross" (attend to image) and "self" (attend among neurons)
+  # null = ["cross"] (a single cross-attention layer)
+  # e.g. ["cross", "cross", "self", "cross"] for deep readout with population context
+  readout_layer_types: null
+
+  # Loss
+  loss_mode: "poisson"
+  response_zscore: false # z-score responses per neuron before MSE loss (only affects mse_rate)
+
+  # Image-conditional loss shaping (only applied in mse mode).
+  # Both default to 0 → no-op; identical to plain MSE on latents.
+  #   mse_center_weight: weight on MSE computed after subtracting per-neuron batch mean.
+  #     Forces the loss to measure image-conditional deviation, not per-neuron baseline.
+  #   cosine_sim_weight: weight on (1 - cos(pred - μ_B, target - μ_B)) per (B, N).
+  #     Adds direction-matching pressure on the same image-conditional residual.
+  mse_center_weight: 0.0
+  cosine_sim_weight: 0.0
+
+  # Number of latent timesteps the model's token_prediction head emits.
+  # Use 1 (default) for compress_t tokenizers whose encoder yields t_comp=1 at the
+  # current data.response_window. Set >1 when the widened window forces t_comp>1
+  # (e.g. a 100ms tokenizer on a 200ms response window → 2). Neuron queries are
+  # tiled along the new temporal axis with learned per-timestep offsets, so the
+  # readout naturally produces (B, N, T_latent, D) to match target shape.
+  token_t_latent: 1
+
+  # Deep token-prediction head.
+  # Pre-norm residual blocks with optional FiLM modulation from the per-neuron
+  # query, so the shared projection specializes per-neuron without adding a
+  # full per-neuron head. FiLM is zero-init so the head starts as a plain
+  # ResMLP. Set `deep_token_head: false` for a shallow 2-layer Linear-GELU-Linear head.
+  deep_token_head: true
+  deep_token_head_depth: 2
+  deep_token_head_width_mult: 2.0
+  deep_token_head_use_film: true
+  deep_token_head_dropout: 0.0

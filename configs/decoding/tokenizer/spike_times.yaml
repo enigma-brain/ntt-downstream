@@ -1,0 +1,7 @@
+# NTT spike-times tokenizer — pass-through baseline.
+mode: ntt
+unit_embedding_mode: add
+sentinels: true
+ntt_tokenizer: spike_times
+ntt_checkpoint: null
+poisson_rate_bin_ms: 100.0

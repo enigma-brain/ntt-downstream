@@ -1,0 +1,41 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]  # keep markdown hard line breaks
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  # ruff and pyright run from the project environment (`uv run`), so the hooks use the
+  # versions pinned in uv.lock, the same ones CI and `uv run ruff ...` use. Separate hook
+  # repos would pin their own versions, which can drift from uv.lock, and an isolated
+  # pyright hook cannot see the project's dependencies.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --frozen ruff check --fix --exit-non-zero-on-fix
+        language: system
+        types_or: [python, pyi, jupyter]
+        require_serial: true
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --frozen ruff format
+        language: system
+        types_or: [python, pyi, jupyter]
+        require_serial: true
+      # Checks the whole project as configured in pyproject.toml ([tool.pyright]), not
+      # just the staged files: a change can break type checking in files it doesn't touch.
+      - id: pyright
+        name: pyright
+        entry: uv run --frozen pyright
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+        require_serial: true

@@ -1,0 +1,17 @@
+defaults:
+  - cowley_v4_perceiver_mse
+  - _self_
+
+tokenizer:
+  latent_layout: "m_flat"
+
+# m_flat folds M into D: unified (B, S=1, T=L, D=M*C=256).
+model:
+  compress_n_latent_n: 256
+  compress_n_t_coarse: 20
+  compress_n_t_target: 20
+
+tags:
+  model: "hiera_perceiver_mse_mflat"
+
+description: "Cowley V4 Pepe + PerceiverTokenizer + MSE on latents (m_flat layout)."

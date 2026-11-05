@@ -1,0 +1,8 @@
+# Poisson baseline tokenizer — config-based, no checkpoint needed.
+mode: ntt_frozen
+unit_embedding_mode: add
+sentinels: true
+ntt_tokenizer: poisson
+ntt_checkpoint: null
+poisson_rate_bin_ms: 100.0
+freeze: true  # Poisson baseline has no learnable params; flag is here for parity.

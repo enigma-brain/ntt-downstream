@@ -1,0 +1,38 @@
+defaults:
+  - cowley_v4_perceiver_mse
+  - _self_
+
+model:
+  loss_mode: "flow_matching"
+
+  # Full-grid generative head: sample the whole Perceiver latent field
+  # (B, S=16, T=20, D=16) jointly instead of using MAR's reveal loop or the
+  # pointwise FlowMatchingHead.
+  use_full_grid_denoiser: true
+  use_ldns_denoiser: false
+  full_grid_hidden_channels: 64
+  full_grid_num_blocks: 4
+  full_grid_num_heads: 4
+  full_grid_mlp_ratio: 2
+  full_grid_kernel_size: 7
+  full_grid_use_s4: false
+  diffusion_batch_mul: 2
+
+  # Rectified-flow training options (defaults shown; see losses/flow_utils.py).
+  flow_time_sampling: "uniform"   # or "logit_normal" (SD3-style)
+  flow_logit_normal_mean: 0.0
+  flow_logit_normal_std: 1.0
+  flow_ot_coupling: false         # minibatch-OT noise pairing
+  flow_cond_dropout: 0.0          # >0 enables CFG at eval (cfg_scale)
+
+trainer:
+  tokenizer_eval:
+    n_flow_steps: 50
+    flow_solver: "heun"
+    flow_shift: 1.0   # >1 concentrates ODE steps near the noise end
+    cfg_scale: 1.0    # requires flow_cond_dropout > 0 at train time
+
+tags:
+  model: "hiera_perceiver_full_grid_flow"
+
+description: "Cowley V4 Pepe + PerceiverTokenizer + full-grid Perceiver-block flow matching over all latent tokens."

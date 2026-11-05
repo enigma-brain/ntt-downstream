@@ -1,0 +1,22 @@
+# Frozen NTT checkpoint tokenizer with fixed-window/all-unit handoff.
+#
+# Use this for population/session-keyed tokenizers such as Perceiver. Compared
+# with `tokenizer=frozen`, the POYO→NTT handoff feeds a full [0, sequence_length]
+# raster with every session unit, using local unit ids for the tokenizer and
+# mapping ids back to POYO-global ids before the adapter.
+mode: ntt_frozen
+unit_embedding_mode: none
+sentinels: true
+ntt_tokenizer: frozen
+ntt_checkpoint: ???  # Must be overridden: path to .ckpt file (or mlflow:/ URI)
+poisson_rate_bin_ms: 100.0
+freeze: true
+discrete_input_mode: z_q
+discrete_indices_source: auto
+# Override the tokenizer's native input window (seconds) for checkpoints
+# whose spec mis-declares window_length_seconds. null = read from the spec.
+fixed_window_seconds: null
+warm_start_unit_emb_proxy: false
+use_global_slot_proxies: false
+full_window_units: true
+include_padded_zero_unit_tokens: false

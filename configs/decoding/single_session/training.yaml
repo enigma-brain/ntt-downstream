@@ -1,0 +1,61 @@
+# Shared training / model / runtime / tokenizer hparams for the
+# single-session calibration orchestrator.
+#
+# baseline_training.yaml and tokenizer_training.yaml each `extends:` this
+# file and override only the variant-specific keys: model.no_crossattn,
+# training.ft_max_steps, training.base_max_steps, training.seeds,
+# tokenizer.sentinels. Everything below is shared across both variants.
+#
+# Read by the orchestration engine (`orchestration calibrate`); CLI flags
+# (e.g. `--batch-size`) override the YAML values.
+#
+# This file is *not* a Hydra config; train.py's own configs live under
+# configs/decoding/ (the train.yaml tree). Here we only persist the orchestrator-level
+# choices that the engine feeds back to train.py via overrides.
+
+model:
+  # POYO size variant. 1.3M supports both crossattn and no_crossattn paths;
+  # 11.8M is only available with crossattn.
+  size: "1.3M"
+  # Latent grid size — only consumed by crossattn variants (no_crossattn
+  # has no latent grid). Inherited unchanged by the no_crossattn variant
+  # since the orchestrator never passes it to train.py in that case.
+  num_latents_per_step: 16
+
+training:
+  ft_eval_every: 100
+  ft_ckpt_every: 100
+  eval_every_n_steps: 200
+  ckpt_every_n_steps: 200
+  # Absolute train-trial counts swept per (other_session, ft_mode) cell.
+  # Each value > floor(0.7 * n_valid_trials) is skipped per session.
+  ft_trial_counts: [4, 8, 16, 32, 64, 86]
+  # Fine-tune modes:
+  #   unit_identification → freeze everything but unit/session embeddings
+  #   full                → update all weights (frozen tokenizer stays frozen)
+  ft_modes: [unit_identification, full]
+
+runtime:
+  batch_size: 128
+  num_workers: 8
+  precision: bf16-mixed
+  force_flash_attn: true
+  # Process-wide CUBLAS knob set once for every worker the orchestrator forks.
+  cublas_workspace_config: ":4096:8"
+  # Parent directory under which every (TRAIN_SESSION, SEED) job writes its
+  # calibration tree (<calib_root>/<BASE_RUN_NAME>/<ft_mode>/<other_session>/
+  # ft_trials_<NNN>/). Override per-invocation via the CALIB_ROOT env var.
+  calib_root: experiments_final
+
+tokenizer:
+  unit_embedding_mode: add
+
+# MLflow logging. Tracking URI / credentials come from the environment
+# (MLFLOW_TRACKING_URI, MLFLOW_TRACKING_USERNAME, MLFLOW_TRACKING_PASSWORD).
+# The orchestrator threads enabled / experiment_name / log_model into
+# every train.py call. enabled: auto turns MLflow on iff MLFLOW_TRACKING_URI
+# is set, so sweeps run without a tracking server; true with no URI is an error.
+mlflow:
+  enabled: auto
+  experiment_name: ntt-eval-calibration
+  log_model: false

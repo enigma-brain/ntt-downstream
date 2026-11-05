@@ -1,0 +1,6 @@
+# @package _global_
+# Dilated depthwise-separable TCN backbone for auditory encoding
+model:
+  conv_rank: 48
+  conv_kernel_size: 7
+  conv_dilations: [1, 2, 4, 8]

@@ -1,0 +1,40 @@
+defaults:
+    - data: wingert_auditory
+    - backbone: causal_conv
+    - model: audio_encoding_tokenizer
+    - trainer: default
+    - _self_
+
+# CROSS-ENTROPY mode requires a discrete-token tokenizer (e.g. transformer-vq, BSQ).
+# The cs-* tokenizer is *continuous* — replace the `tokenizer`
+# block below with the checkpoint path of your discrete tokenizer before
+# running this config.
+model:
+    loss_mode: "cross_entropy"
+    ce_vocab_size: 1024 # must match your discrete tokenizer's codebook size
+
+tokenizer:
+    enabled: true
+    checkpoint_first: true
+    tokenizer_window_length_seconds: null
+    # Placeholder — replace with a discrete-token tokenizer spec or checkpoint.
+    spec:
+        _target_: ntt.contrib.tokenizer.compressed_sensing.CompressedSensingTokenizerSpec
+        KIND: compressed_sensing
+        n_neurons: 100
+        window_length_seconds: 0.1
+        bin_size_ms: 10.0
+        latent_dim: 48
+        compress_mode: "per_neuron"
+
+trainer:
+    experiment_name: "wingert-auditory-encoding"
+    eval_skip_seconds: 0.0
+    eval_rebin_hz: null
+    tokenizer_mode: "frozen"
+
+tags:
+    model: "audio_tokenizer_cross_entropy"
+    dataset: "wingert_auditory"
+
+description: "Wingert auditory cortex: CausalConv + cross-attention, cross-entropy on discrete tokenizer indices. Requires a discrete-token tokenizer."

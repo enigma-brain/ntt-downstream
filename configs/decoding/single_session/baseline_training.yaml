@@ -1,0 +1,24 @@
+# Baseline (no-tokenizer / spike_times) variant for the calibration
+# orchestrator.
+#
+# Inherits all shared hparams from training.yaml; only the variant-specific
+# differences are listed below.
+
+extends: training.yaml
+
+model:
+  # Crossattention is ON for the baseline. `num_latents_per_step`
+  # (inherited from training.yaml at 16) matches the baseline POYO
+  # configuration.
+  no_crossattn: false
+
+training:
+  ft_max_steps: 800
+  base_max_steps: 3400
+  seeds: [42, 43]
+
+tokenizer:
+  # Baseline uses POYO's spike_times tokenizer — no NTT ckpt required;
+  # the orchestrator skips the CKPT validation when kind != frozen.
+  kind: spike_times
+  sentinels: true

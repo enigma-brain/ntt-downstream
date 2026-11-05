@@ -1,0 +1,213 @@
+# Shared defaults for POYO training.
+session: c_20150319_center_out_reaching   # single-session path
+data_root: ./data/processed/
+log_dir: ./outputs/poyo/
+epochs: 1000
+batch_size: 128
+eval_epochs: 4
+seed: 42
+
+# Step-based training override. When `max_steps` is set (not null), the
+# Trainer is driven by total optimizer-step count instead of epochs:
+#   - max_epochs is forced to -1 (unlimited)
+#   - val_check_interval = eval_every_n_steps
+#   - ModelCheckpoint switches to every_n_train_steps + save_on_train_epoch_end=False
+# This makes step counts directly comparable across data ratios (no need
+# for per-ratio epoch scaling). The epoch-driven path is used when
+# max_steps is null (default).
+#
+# Like `epochs`, `max_steps` and `*_every_n_steps` are 1-GPU-equivalent
+# counts at effective batch (cfg.batch_size * world_size); train.py
+# divides by world_size to keep the OneCycleLR ramp + total optimizer-
+# step budget constant across W-GPU configurations.
+max_steps: null
+eval_every_n_steps: 200
+checkpoint_every_n_steps: 200
+num_workers: 8
+gpus: 1
+num_nodes: 1
+# Lightning strategy. "auto" → single-device when gpus=1, DDP when gpus>1.
+# Override with e.g. `strategy=ddp_find_unused_parameters_true` if needed.
+strategy: auto
+precision: "32"
+
+# Lightning logger flush cadence + grad-norm compute cadence (V2TrainWrapper
+# gates `on_before_optimizer_step` to fire every N steps to match). Set to 1
+# to log every step at the cost of per-step Python iteration over all named
+# parameters and a sparse-grad coalesce.
+log_every_n_steps: 10
+
+# When true, route every torch_brain attention call through FlashAttention
+# via the flash_attn package. Disables xformers in torch_brain and replaces
+# `rotary_attn_pytorch_func` with a varlen wrapper that converts the encoder
+# cross-attention's bool key-padding mask into cu_seqlens — sidestepping
+# PyTorch SDPA's "no attn_mask in flash kernel" restriction. Requires
+# flash_attn installed and inputs in fp16/bf16 (set precision=bf16-mixed).
+force_flash_attn: false
+
+optim:
+  # peak_lr = base_lr * effective_batch_size, where effective_batch_size =
+  # batch_size * gpus * num_nodes (see V2TrainWrapper.configure_optimizers).
+  # 1.953125e-6 * 512 = 1.0e-3 — the default recipe is tuned around this
+  # peak. Linear scaling on effective batch:
+  #   bs=128 (1gpu) → peak=2.5e-4   bs=256 (1gpu) → peak=5.0e-4
+  #   bs=256 (2gpu) → peak=1.0e-3   bs=1024 (1gpu) → peak=2.0e-3
+  base_lr: 3.125e-5
+  weight_decay: 1.0e-4
+  # OneCycleLR warmup: ramp from peak/div_factor → peak over warmup_pct of
+  # training, then cosine-anneal to peak/(div_factor*final_div_factor).
+  warmup_pct: 0.05
+  div_factor: 25
+  # final_lr = peak / (div_factor * final_div_factor) = peak / 1000.
+  # 25 * 40 = 1000 keeps the warmup start at peak/25 (a reasonable 4e-5 at
+  # peak=1e-3) while ending the cosine anneal at a refining-but-not-frozen LR.
+  final_div_factor: 40
+  # Multiplier on the tokenizer param group's peak LR relative to the POYO
+  # peak LR. Only consumed when `tokenizer.freeze=False` (V2TrainWrapper adds
+  # a third optimizer group for trainable tokenizer params). Default 1.0
+  # gives the tokenizer the same LR as POYO.
+  tokenizer_lr_factor: 1.0
+
+unit_dropout: false
+
+# Calibration / fine-tune support.
+#   init_ckpt:   path to a Lightning .ckpt to initialise the wrapper from.
+#                On load, InfiniteVocabEmbedding pre-hooks materialise their
+#                weights from the ckpt's vocab; afterwards the current
+#                session's units/sessions are added via extend_vocab() so
+#                trained entries retain their values and only the new
+#                entries are randomly initialised. `null` means "fresh init"
+#                (the default).
+#   freeze_mode: "none" leaves all params trainable.
+#                "unit_identification" freezes everything except
+#                model.unit_emb + model.session_emb — implements the
+#                Section-2.5 unit-identification fine-tune from the POYO
+#                paper.
+#   ft_train_input_proj:
+#                When true and freeze_mode=unit_identification, also
+#                unfreeze input_proj (the tokenizer→model projection).
+#                Motivation: for combines_units=True tokenizers (e.g.
+#                Perceiver), the body learns to weight unit_emb near
+#                init scale and rely on input_proj-projected slot
+#                content; unfreezing input_proj at FT gives the FT a
+#                lever the body actually reads.
+#   eval_only:   skip trainer.fit() entirely and only run validate (+ test
+#                when test loaders exist). Used for the n_trials=0 (plain
+#                eval) leg of the calibration sweep.
+init_ckpt: null
+freeze_mode: none
+ft_train_input_proj: false
+eval_only: false
+
+# Multi-session path — set `dataset` to a torch_brain selection list
+# (e.g. `${ntt_split:ntt_reaching_strict_train}`) to switch from the
+# single-session SingleSessionCODataset to the multi-brainset dataset.
+# When `dataset` is null the single-session `session` path runs.
+dataset: null
+restrict_brainsets: []
+co_only: true   # filter perich `_random_target_reaching` sessions
+
+# Trial-based split override. When `enabled: true`, valid trials in each
+# recording (for the listed brainsets only) are placed in an order array
+# and sliced contiguously into train/valid/test by `ratios` (whole trials,
+# never split). Train domain is the full session domain minus (valid ∪ test)
+# dilated by `dilation` s, matching the upstream brainsets pipeline buffer.
+# The HDF5-baked random splits are ignored at runtime; HDF5 files are not
+# modified. Default ratios mirror the brainsets pipeline (70/10/20).
+#
+# `mode` controls how trials are placed in the order array:
+#   - temporal: sort by trial start time. Train is the start of the
+#     recording, eval is the tail — leakage-safe across the
+#     train→eval boundary, so test reflects generalisation under
+#     non-stationarity (typically yields a *lower* test score than
+#     valid because eval lives in the temporally-distant future).
+#   - random: seeded shuffle (np.random.default_rng(seed).permutation).
+#     Trials are i.i.d.-assigned across the recording, matching the
+#     brainsets-pipeline behaviour. Use this when valid≈test by
+#     construction is desired (e.g. diagnosing whether a test/valid
+#     gap is a temporal-shift artefact). With a fixed `seed`, eval
+#     trials are stable across train-ratio sweeps.
+temporal_split:
+  enabled: false
+  ratios: [0.7, 0.1, 0.2]   # [train, valid, test]; sum ≤ 1.0, middle gap (if any) discarded
+  brainsets: [perich_miller_population_2018]
+  dilation: 1.0
+  mode: temporal            # "temporal" | "random"
+  seed: 42                  # only used when mode=random
+
+# Train-split decimation. When `trials` is set (int), the train sampling
+# intervals returned by the dataset are replaced by the time spans of
+# `trials` seeded-random valid trials drawn from the baseline train domain.
+# Composes on top of whichever split source produced that domain (HDF5-baked
+# random split, or the runtime `temporal_split` override above) — valid /
+# test domains pass through unchanged.
+#
+# This is the canonical knob for "use exactly N train trials". Used by
+# the calibration sweeps to vary the train-data budget (e.g. 4, 8, 16, …
+# trials) while keeping the baked random valid/test layout intact.
+#
+#   trials: null         # null = no decimation; int = pick this many trials
+#   seed:   ${seed}      # RNG seed for trial selection (defaults to run seed)
+#   brainsets: null      # null/[] = decimate every brainset (single-session
+#                          default). When set to a non-empty list, only those
+#                          brainsets get decimated — every other child dataset
+#                          passes through with its full baseline train domain.
+#                          Mirror of `temporal_split.brainsets` so multi-
+#                          brainset calibrations can target one source without
+#                          disturbing the others.
+train_decimation:
+  trials: null
+  seed: ${seed}
+  brainsets: null
+
+# Tier evaluation pools (only consumed when `dataset` is set).
+# Each entry is a torch_brain selection list (resolver output) or null.
+# `_split` controls which time-domain split to read for that pool; tiers
+# whose source YAML carries `config.ignore_splits: true` should use null
+# (full session domain).
+#
+# `enabled: false` short-circuits the tier wiring entirely — every
+# `tier*` selection below is ignored even if non-null. Use it for
+# train-only / debug runs that don't want eval datasets built.
+tiers:
+  enabled: false
+  tier1_val:
+    selection: null
+    split: valid
+  tier2_val:
+    selection: null
+    split: null
+  tier2_test:
+    selection: null
+    split: null
+  tier3_val:
+    selection: null
+    split: null
+  tier3_test:
+    selection: null
+    split: null
+
+wandb:
+  enabled: true
+  project: poyo
+  name: null
+  entity: null
+  log_model: false
+  tags: []
+  group: null
+  notes: null
+
+# MLflow logger. Reads MLFLOW_TRACKING_URI / _USERNAME / _PASSWORD from
+# the environment. Off by default to match the wandb-default contract.
+#
+# parent_run_id / tags are set by the orchestrator scripts to nest this run
+# under a parent grouping handle (see ntt_downstream.decoding.utils.mlflow_parent).
+# Setting parent_run_id auto-injects the `mlflow.parentRunId` tag MLflow
+# needs to render the parent/child layout in the UI.
+mlflow:
+  enabled: false
+  experiment_name: poyo
+  run_name: null
+  log_model: false
+  parent_run_id: null
+  tags: {}

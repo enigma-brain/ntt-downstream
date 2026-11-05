@@ -1,0 +1,88 @@
+{
+  "kind": "run",
+  "metadata": {
+    "checkpoint": {},
+    "config": {
+      "tokenizer": {
+        "ntt_checkpoint": "mlflow-artifacts:/1/abc/artifacts/model.ckpt"
+      }
+    },
+    "git_sha": "fixture-git-sha",
+    "hostname": "fixture-host",
+    "mlflow_run_id": null,
+    "n_sessions": 1,
+    "ntt_commit": "0000000000000000000000000000000000000000",
+    "ntt_path": "/fixture/ntt/src/ntt/__init__.py",
+    "ntt_version": "0.0.0-fixture",
+    "run_name": null,
+    "sessions": [
+      "t_20130819_center_out_reaching"
+    ],
+    "timestamp": "2026-01-01T00:00:00Z",
+    "tokenizer_checkpoint": "mlflow-artifacts:/1/abc/artifacts/model.ckpt"
+  },
+  "metrics": {
+    "test": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.81,
+          "n": 1,
+          "value": 0.81,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "t_20130819_center_out_reaching": {
+          "r2": 0.81
+        }
+      }
+    },
+    "val_best": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.86,
+          "n": 1,
+          "value": 0.86,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "t_20130819_center_out_reaching": {
+          "r2": 0.86
+        }
+      }
+    },
+    "val_last": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.84,
+          "n": 1,
+          "value": 0.84,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "t_20130819_center_out_reaching": {
+          "r2": 0.84
+        }
+      }
+    }
+  },
+  "schema_version": 2,
+  "task": "decoding"
+}

@@ -1,0 +1,41 @@
+# @package _global_
+model:
+  model_type: "audio_encoding"
+
+  # Backbone (dilated TCN)
+  conv_rank: 48
+  conv_kernel_size: 7
+  conv_dilations: [1, 2, 4, 8]
+
+  # Windowing
+  window_size: 10         # M=10 bins per window (100ms at 100 Hz)
+
+  # Self-attention over windows
+  n_self_attn_layers: 2
+  n_self_attn_heads: 4
+  rope_max_seq_len: 512
+
+  # Cross-attention readout
+  dim_head: 48
+  num_heads: 4
+  readout_mlp_ratio: 4
+  readout_use_subject_embedding: true
+
+  # Regularization
+  dropout: 0.1
+
+  # Output activation
+  learnable_softplus: false
+  softplus_beta: 1.0
+
+  # Loss
+  loss_mode: "poisson"
+
+  # Deep output head in the readout.
+  # Applies in both rate and tokenizer modes. FiLM conditioning uses the per-
+  # neuron query, so the shared projection specializes per-neuron. Set
+  # `deep_token_head: false` for a single-Linear output projection.
+  deep_token_head: true
+  deep_token_head_depth: 2
+  deep_token_head_width_mult: 2.0
+  deep_token_head_use_film: true

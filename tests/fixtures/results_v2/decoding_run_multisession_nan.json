@@ -1,0 +1,119 @@
+{
+  "kind": "run",
+  "metadata": {
+    "checkpoint": {
+      "best_epoch": 3,
+      "best_path": "checkpoints/epoch=3-step=1200.ckpt",
+      "best_score": null,
+      "best_step": 1200,
+      "last_path": "checkpoints/last.ckpt",
+      "mode": "max",
+      "monitor": "average_val_metric"
+    },
+    "config": {
+      "tokenizer": {
+        "ntt_checkpoint": "mlflow-artifacts:/1/abc/artifacts/model.ckpt"
+      }
+    },
+    "git_sha": "fixture-git-sha",
+    "hostname": "fixture-host",
+    "mlflow_run_id": null,
+    "n_sessions": 3,
+    "ntt_commit": "0000000000000000000000000000000000000000",
+    "ntt_path": "/fixture/ntt/src/ntt/__init__.py",
+    "ntt_version": "0.0.0-fixture",
+    "run_name": null,
+    "sessions": [
+      "c_20131003_center_out_reaching",
+      "j_20160405_center_out_reaching",
+      "t_20130819_center_out_reaching"
+    ],
+    "timestamp": "2026-01-01T00:00:00Z",
+    "tokenizer_checkpoint": "mlflow-artifacts:/1/abc/artifacts/model.ckpt"
+  },
+  "metrics": {
+    "test": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.78,
+          "n": 2,
+          "std": 0.056568542494923775,
+          "value": 0.78,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "c_20131003_center_out_reaching": {
+          "r2": 0.82
+        },
+        "j_20160405_center_out_reaching": {
+          "r2": 0.74
+        },
+        "t_20130819_center_out_reaching": {
+          "r2": null
+        }
+      }
+    },
+    "val_best": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.8,
+          "n": 3,
+          "std": 0.0,
+          "value": 0.8,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "c_20131003_center_out_reaching": {
+          "r2": 0.8
+        },
+        "j_20160405_center_out_reaching": {
+          "r2": 0.8
+        },
+        "t_20130819_center_out_reaching": {
+          "r2": 0.8
+        }
+      }
+    },
+    "val_last": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.79,
+          "n": 3,
+          "std": 0.0,
+          "value": 0.79,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "c_20131003_center_out_reaching": {
+          "r2": 0.79
+        },
+        "j_20160405_center_out_reaching": {
+          "r2": 0.79
+        },
+        "t_20130819_center_out_reaching": {
+          "r2": 0.79
+        }
+      }
+    }
+  },
+  "schema_version": 2,
+  "task": "decoding"
+}

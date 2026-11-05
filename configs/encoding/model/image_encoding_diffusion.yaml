@@ -1,0 +1,23 @@
+# @package _global_
+model:
+  model_type: "image_encoding"
+  # n_time_bins is auto-computed from data.response_window / data.bin_size at runtime
+
+  # Readout
+  dim_head: 48
+  num_heads: 4
+  readout_mlp_ratio: 4
+  readout_use_session_embedding: true
+  readout_use_subject_embedding: true
+  readout_use_gated_ffn: false
+
+  # Loss: flow matching in tokenizer latent space
+  loss_mode: "diffusion"
+  token_prediction_dim: 48
+  diffusion:
+    target_channels: 48
+    z_channels: 48
+    depth: 3
+    width: 128
+    num_sampling_steps: 100
+  diffusion_batch_mul: 4

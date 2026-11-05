@@ -1,0 +1,17 @@
+# @package _global_
+data:
+  dataset_path: "./data/wingert_auditory_cortex_2026"
+  bin_size: 0.01          # 10ms bins (100 Hz) — spectrogram/model resolution
+  response_bin_size: null  # null = same as bin_size; e.g. 0.001 for 1ms tokenizer bins
+  response_normalization: "none"
+  spectrogram_fs: 100.0
+  n_freq_channels: 32
+  crop_length: 1000       # training crop: 1000 spectrogram bins = 10s
+  session_ids: null
+  subjects: null
+
+dataloader:
+  batch_size: 32
+  num_workers: 4
+  prefetch_factor: 2
+  persistent_workers: true

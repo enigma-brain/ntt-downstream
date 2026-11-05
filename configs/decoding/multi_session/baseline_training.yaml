@@ -1,0 +1,28 @@
+# Baseline (spike_times / no-tokenizer) variant for the multi-session
+# calibration orchestrator.
+#
+# Inherits all shared hparams from configs/decoding/single_session/training.yaml;
+# only the variant-specific differences are listed below. Mirrors the
+# delta in configs/decoding/single_session/baseline_training.yaml — the
+# differences between baseline and tokenizer are identical to the
+# single-session calibration's split.
+#
+# `base_max_steps` is bumped relative to the single-session default (3400)
+# because the multi-session train pool is ~4× the per-session data budget;
+# 6800 (≈ 2× single) keeps wall-time bounded while letting each session
+# see roughly half the single-session epoch budget. Adjust upward if val
+# curves haven't plateaued.
+
+extends: ../single_session/training.yaml
+
+model:
+  no_crossattn: false
+
+training:
+  ft_max_steps: 800
+  base_max_steps: 6800
+  seeds: [42, 43]
+
+tokenizer:
+  kind: spike_times
+  sentinels: true

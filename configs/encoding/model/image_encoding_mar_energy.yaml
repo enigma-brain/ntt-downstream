@@ -1,0 +1,40 @@
+# @package _global_
+model:
+  model_type: "image_encoding_mar"
+  # n_time_bins is auto-computed from data.response_window / data.bin_size at runtime
+
+  # Readout (unused by MAR, kept for config compatibility)
+  dim_head: 96
+  num_heads: 4
+
+  # MAR transformer
+  mar_dim: 128
+  mar_depth: 4
+  mar_num_heads: 8
+  mar_mlp_ratio: 4
+  mar_attn_dropout: 0.1
+  mar_proj_dropout: 0.1
+
+  # MAR masking / generation
+  mask_ratio_min: 0.7
+  mask_ratio_std: 0.25
+  use_diffusion_pos_embed: true
+  num_buffer_tokens: 8
+  unmask_schedule: "cosine"
+  # With ~80% masking and EnergyLoss drawing 2 internal noise samples per token,
+  # effective generator FLOPs = diffusion_batch_mul * 2 per masked position.
+  # Lowered from 4 to 2 relative to non-MAR because MAR pays this cost per step.
+  diffusion_batch_mul: 2
+
+  # Loss: energy score (EAR, arXiv:2505.07812)
+  loss_mode: "energy"
+  # target_channels / z_channels are NOT used for MAR: the MAR constructor
+  # derives token_dim from the tokenizer and uses mar_dim for conditioning.
+  # Only width / depth / noise_channels / alpha / train_temperature apply.
+  energy:
+    width: 256
+    depth: 3
+    noise_channels: 64
+    alpha: 1.5
+    train_temperature: 1.0
+    grad_checkpointing: false

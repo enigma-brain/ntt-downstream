@@ -1,0 +1,31 @@
+# @package _global_
+# Multi-session POYO training on `ntt_reaching_strict`.
+#
+# The `${ntt_split:...}` resolver pulls selection lists from
+# `<ntt>/config/data/selections/ntt_reaching_strict_*.yaml`.
+# Set NTT_SPLITS_DIR if `ntt` is not installed via uv source path.
+#
+# Default scope here is the FULL train pool (3 brainsets, 122 sessions).
+# Override `restrict_brainsets` to subset, e.g.:
+#   python -m ntt_downstream.decoding.train +data=ntt_reaching_strict \
+#       restrict_brainsets=[perich_miller_population_2018]
+
+dataset: ${ntt_split:ntt_reaching_strict_train}
+
+tiers:
+  enabled: true
+  tier1_val:
+    selection: ${ntt_split:ntt_reaching_strict_tier1_xtime_val}
+    split: valid
+  tier2_val:
+    selection: ${ntt_split:ntt_reaching_strict_tier2_xsession_val}
+    split: null   # ignore_splits: true upstream → full session domain
+  tier2_test:
+    selection: ${ntt_split:ntt_reaching_strict_tier2_xsession_test}
+    split: null
+  tier3_val:
+    selection: ${ntt_split:ntt_reaching_strict_tier3_xsubject_val}
+    split: null
+  tier3_test:
+    selection: ${ntt_split:ntt_reaching_strict_tier3_xsubject_test}
+    split: null

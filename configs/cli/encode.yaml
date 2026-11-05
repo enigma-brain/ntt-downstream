@@ -1,0 +1,15 @@
+# Curated encode entrypoint — the stable contract config. Composes the encoding
+# default recipe (configs/encoding/cowley_v4_base.yaml). Lives in configs/cli/,
+# a different search-path dir than the recipe, so the reference is ABSOLUTE
+# (leading slash).
+defaults:
+  - /cowley_v4_base   # configs/encoding/cowley_v4_base.yaml default recipe
+  - _self_
+
+# The tokenizer contract surface, declared as data so the curated entrypoint
+# documents what --tokenizer-ckpt touches (the launcher force-adds these with
+# ++ regardless, because recipe schemas are inconsistent — see cli/overrides.py).
+tokenizer:
+  enabled: false        # flipped by --tokenizer-ckpt
+  checkpoint_first: true # prefer the checkpoint over an inline spec
+  checkpoint_path: null

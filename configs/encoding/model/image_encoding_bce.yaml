@@ -1,0 +1,16 @@
+# @package _global_
+model:
+  model_type: "image_encoding"
+  # n_time_bins is auto-computed from data.response_window / data.bin_size at runtime
+
+  # Readout
+  dim_head: 48
+  num_heads: 4
+  readout_mlp_ratio: 4
+  readout_use_session_embedding: true
+  readout_use_subject_embedding: true
+  readout_use_gated_ffn: false
+
+  # Loss: BCE on BSQ binary codes
+  loss_mode: "bce"
+  token_prediction_dim: 16

@@ -1,0 +1,47 @@
+# Data hparams for tokenizer_benchmark.sbatch.
+#
+# Mirrors the tier structure of data.yaml but lists 4 sessions per tier
+# so the benchmark gets more statistical breadth. Tiers are defined
+# *relative to the calibration train_sessions* (c_20151103_center_out,
+# c_20131217_random_target):
+#   Tier 1 (xtime val):    train sessions, held-out time slice
+#   Tier 2 (xsession val): same subjects (c), different sessions
+#   Tier 3 (xsubject):     different subjects entirely (t)
+#
+# Restricted to monkeys c and t only. Sessions are balanced 6/6 between c
+# and t, and per-tier task balance (CO vs RT) is preserved. Each session is
+# kept under ~90 units to bound memory/runtime; n_units is noted inline.
+
+data_root: ./data/processed
+
+brainset: perich_miller_population_2018
+
+# `temporal_split.enabled=false` is passed to every train.py call: the
+# baked HDF5 random ~70/10/20 split is the source of truth.
+temporal_split_enabled: false
+
+# Same Tier-1 train sessions as data.yaml, so the benchmark yaml defines a
+# train cohort even though the benchmark itself does single-session runs only.
+train_sessions:
+  - c_20151103_center_out_reaching
+  - c_20131217_random_target_reaching
+
+# Eval sessions iterated over by the benchmark — 4 per tier.
+other_sessions:
+  # --- Tier 1 (xtime val: train sessions, held-out time slice) ---
+  - c_20151103_center_out_reaching                  #  38 units (train, CO)
+  - c_20131217_random_target_reaching               #  57 units (train, RT)
+  - t_20130904_random_target_reaching               #  73 units (RT)
+  - c_20131031_center_out_reaching                  #  49 units (CO)
+
+  # --- Tier 2 (xsession val: same subject c, different sessions) ---
+  - c_20151104_center_out_reaching                  #  59 units (CO)
+  - c_20131022_center_out_reaching                  #  41 units (CO)
+  - c_20150629_center_out_reaching                  #  49 units (CO)
+  - t_20130819_center_out_reaching                  #  55 units (CO)
+
+  # --- Tier 3 (xsubject val/test: monkey t) ---
+  - t_20130821_center_out_reaching                  #  59 units, val (CO)
+  - t_20130822_random_target_reaching               #  64 units, val (RT)
+  - t_20130820_random_target_reaching               #  54 units, test (RT)
+  - t_20130823_center_out_reaching                  #  45 units, test (CO)

@@ -1,0 +1,34 @@
+# Frozen ntt checkpoint tokenizer (e.g. VAE, LDNS, residual-LFQ).
+mode: ntt_frozen
+unit_embedding_mode: none
+sentinels: true
+ntt_tokenizer: frozen
+ntt_checkpoint: ???  # Must be overridden: path to .ckpt file (or mlflow:/ URI)
+poisson_rate_bin_ms: 100.0
+freeze: true  # Set to false to fine-tune the ntt tokenizer end-to-end (banner-warned).
+discrete_input_mode: z_q     # "z_q" (continuous embedding) or "embedding" (learnable codebook lookup)
+discrete_indices_source: auto  # "auto" | "encode" | "bottleneck" | "forward"
+# Override the tokenizer's native input window (seconds) for checkpoints
+# whose spec mis-declares window_length_seconds. null = read from the spec.
+fixed_window_seconds: null
+# Warm-start unit_emb at FT init: copy base session's first-M slot-proxy
+# rows into the new session's first-M proxy rows. Only meaningful for
+# combines_units=True tokenizers (e.g. Perceiver) used with init_ckpt.
+warm_start_unit_emb_proxy: false
+# Global slot proxies: for combines_units=True tokenizers,
+# register `M` universal "_slot_k" tokens in unit_emb instead of using
+# per-session real-unit_ids as slot proxies. Shared across all sessions —
+# base train learns 8 rows; FT inherits them with no extend_vocab on the
+# slot path. Architecturally honest for abstract-latent tokenizers
+# (slot k means the same thing across sessions).
+use_global_slot_proxies: false
+# POYO→NTT handoff. auto = full window + all session units with local unit ids
+# (FullWindowUnitV2TrainWrapper) for session-keyed tokenizers (per-session
+# unit embeddings, e.g. Perceiver); the active-unit handoff for
+# everything else (the default). false on a session-keyed tokenizer is an error.
+# Fixed-population tokenizers (compress_n true, variable_n false, e.g. LDNS,
+# wavelet-*) read neurons by position and need true: the active-unit
+# handoff packs each window's spiking units into positions 0..k-1, so a
+# neuron's position changes from window to window (docs/decoding.md, "Which
+# unit handoff a frozen tokenizer needs").
+full_window_units: auto

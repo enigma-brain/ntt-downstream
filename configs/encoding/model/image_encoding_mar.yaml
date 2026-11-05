@@ -1,0 +1,30 @@
+# @package _global_
+model:
+  model_type: "image_encoding_mar"
+  # n_time_bins is auto-computed from data.response_window / data.bin_size at runtime
+
+  # Readout (unused by MAR, but kept for config compatibility)
+  dim_head: 96
+  num_heads: 4
+
+  # MAR transformer
+  mar_dim: 128
+  mar_depth: 4
+  mar_num_heads: 8
+  mar_mlp_ratio: 4
+  mar_attn_dropout: 0.1
+  mar_proj_dropout: 0.1
+
+  # MAR masking / generation
+  mask_ratio_min: 0.7
+  mask_ratio_std: 0.25
+  use_diffusion_pos_embed: true
+  num_buffer_tokens: 8
+  unmask_schedule: "cosine"
+  diffusion_batch_mul: 4
+
+  # Loss
+  loss_mode: "flow_matching"
+  flow_head_width: 96
+  flow_head_depth: 3
+  num_sampling_steps: 100

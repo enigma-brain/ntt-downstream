@@ -1,0 +1,86 @@
+# Data hparams for the multi-session calibration sweep.
+#
+# Splits the 8 matched-trials sessions used by
+# `configs/decoding/single_session/data.yaml` (the single-session calibration)
+# into a 4-session base-train pool + 4-session FT/eval pool, with a
+# balanced mix of *original* tier labels on both sides. ("Original tier"
+# = the tier label from the single-session calibration's perspective —
+# what the session would be when {c_20151103, c_20131217} are the train
+# pool; this is the label baked into the single_session/data.yaml comments.)
+#
+# Read by the orchestration engine (`orchestration calibrate --multi-session`),
+# which wires `train_sessions` into the multi-session Hydra preset
+# `data/calibration_multi_base.yaml` via `_train_sessions_list=[…]`.
+#
+# --- Original-tier semantics (from single_session/data.yaml) ---
+# Tier 1 (xtime val):    same train sessions, held-out time slice.
+#                        Includes the actual single-session train_sessions
+#                        plus the documented "tier-1 alternates" that meet
+#                        the n_valid_trials floor.
+# Tier 2 (xsession val): same subjects, different sessions.
+# Tier 3 (xsubject):     different subjects entirely.
+#
+# --- 8 matched-trials sessions, attributes ---
+# subj.   session                                 task           orig.tier
+# c       c_20151103_center_out_reaching          center_out     T1
+# c       c_20131217_random_target_reaching       random_target  T1
+# c       c_20151104_center_out_reaching          center_out     T2  (only 1 T2)
+# j       j_20160406_center_out_reaching          center_out     T3
+# m       m_20140214_random_target_reaching       random_target  T1
+# m       m_20150511_center_out_reaching          center_out     T1
+# t       t_20130820_random_target_reaching       random_target  T3
+# t       t_20130822_random_target_reaching       random_target  T3
+#
+# --- Split: 4 train / 4 eval, balanced original tiers ---
+# Original-tier counts: T1×4, T2×1, T3×3. With only 1 T2 session, perfect
+# symmetry is impossible; the closest 4/4 split is 2T1+1T2+1T3 vs
+# 2T1+0T2+2T3 (T1 matched 2:2; the lone T2 lives on one side, T3 split
+# 1:2 on the other). The j-subject session is in eval (only j-subject
+# session in the 8-set, so this is the only way to surface a fully-novel
+# subject in the eval pool). The lone T2 sits in train as the necessary
+# counterpart to keep T1 balanced; both halves still cover 3+ subjects.
+#
+# Train (4): 2 T1 + 1 T2 + 1 T3, 2 center_out + 2 random_target,
+#            3 subjects (c, m, t)
+#   - c_20151103_center_out_reaching      (T1, c, CO)
+#   - m_20140214_random_target_reaching   (T1, m, RT)
+#   - c_20151104_center_out_reaching      (T2, c, CO)
+#   - t_20130820_random_target_reaching   (T3, t, RT)
+#
+# Eval  (4): 2 T1 + 0 T2 + 2 T3, 2 center_out + 2 random_target,
+#            4 subjects (c, m, j, t)
+#   - c_20131217_random_target_reaching   (T1, c, RT)
+#   - m_20150511_center_out_reaching      (T1, m, CO)
+#   - j_20160406_center_out_reaching      (T3, j, CO)
+#   - t_20130822_random_target_reaching   (T3, t, RT)
+
+data_root: ./data/processed
+
+# Brainset queried during the per-session valid-trial preflight.
+brainset: perich_miller_population_2018
+
+# `temporal_split.enabled=false` is passed to every train.py call so
+# the HDF5-baked random ~70/10/20 split is the source of truth for both
+# the multi-session base train and the per-session FT cells. Matches the
+# single-session calibration's split contract; flipping this on would
+# change the train/val/test domains and break comparability.
+temporal_split_enabled: false
+
+# Train pool — 4 sessions used jointly for the base POYO multi-session
+# train. The orchestrator wires this list into the Hydra preset
+# `data/calibration_multi_base.yaml` as `_train_sessions_list=[…]`.
+train_sessions:
+  - c_20151103_center_out_reaching
+  - m_20140214_random_target_reaching
+  - c_20151104_center_out_reaching
+  - t_20130820_random_target_reaching
+
+# Eval pool — 4 sessions used as FT/eval targets in the calibration
+# sweep. None of these appear in `train_sessions`; the orchestrator's
+# safety filter would catch any accidental overlap if the user overrides
+# either list via env.
+other_sessions:
+  - c_20131217_random_target_reaching
+  - m_20150511_center_out_reaching
+  - j_20160406_center_out_reaching
+  - t_20130822_random_target_reaching

@@ -1,0 +1,21 @@
+# @package _global_
+# Base Hiera for 112x112 images, trained from scratch (~50.7M backbone params)
+# Token grid: 56x56 → 28 → 14 → 7 through 3 q_pool stages
+model:
+  pretrained_backbone: null
+  pretrained_backbone_kwargs: {}
+  freeze_backbone: false
+  image_size: [112, 112]
+  hiera_embed_dim: 96
+  hiera_num_heads: 1
+  hiera_stages: [2, 3, 16, 3]  # depth=24, ~50.7M params
+  hiera_q_pool: 3
+  hiera_in_chans: 3
+  hiera_q_stride: [2, 2]
+  hiera_mask_unit_size: [8, 8]
+  hiera_patch_kernel: [7, 7]
+  hiera_patch_stride: [2, 2]
+  hiera_patch_padding: [3, 3]
+  hiera_sep_pos_embed: false
+  hiera_drop_path_rate: 0.1
+  hiera_mlp_ratio: 4.0

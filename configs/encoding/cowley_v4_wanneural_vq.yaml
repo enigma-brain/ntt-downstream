@@ -1,0 +1,47 @@
+defaults:
+    - data: cowley_v4
+    - backbone: hiera_pretrained_224
+    - trainer: default
+    - _self_
+
+data:
+    bin_size: 0.001 # 1 ms bins, matching the tokenizer's native resolution
+    response_window: 0.200
+
+tokenizer:
+    enabled: true
+    checkpoint_first: true
+    # Conv tokenizer with residual VQ (wanneural-VQ): local .ckpt path or MLflow artifact URI.
+    checkpoint_path: ???
+    latent_scale: 1.0 # not used for cross-entropy (discrete targets)
+
+model:
+    model_type: "image_encoding"
+
+    # Readout
+    dim_head: 48
+    num_heads: 4
+    readout_mlp_ratio: 4
+    readout_use_session_embedding: true
+    readout_use_subject_embedding: true
+    readout_use_gated_ffn: false
+
+    # Loss: cross-entropy on the residual-VQ codebooks of the conv tokenizer
+    # Auto-derived from tokenizer at module setup:
+    #   ce_vocab_size = 1024 (codebook_size per quantizer)
+    #   token_prediction_dim = 16 (z_dim, the 16-dim feature predicted per latent slot)
+    #   num_codebooks = 4 (residual VQ; ce_head outputs 4*1024 logits per slot)
+    loss_mode: "cross_entropy"
+    ce_sample_temperature: 1.0
+    # The conv-VQ checkpoint compresses 200ms (200 bins) into 2 latent
+    # time tokens (temporal_compression=100x). The temporal-tiled readout
+    # must produce t_comp=2 prediction slots per neuron.
+    token_t_latent: 2
+
+tags:
+    model: "hiera_ce_wanneural_vq"
+    dataset: "cowley_v4"
+
+description:
+    "Cowley V4 with cross-entropy loss on a conv tokenizer with residual VQ (1ms bins,
+    100ms per token, vocab=1024)."

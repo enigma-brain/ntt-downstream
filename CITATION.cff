@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Neurons To Tokens (NTT): downstream evaluation"
+type: software
+license: MIT
+repository-code: "https://github.com/enigma-brain/ntt-downstream"
+url: "https://github.com/enigma-brain/ntt-downstream"
+authors:
+  - given-names: Federico
+    family-names: D'Agostino
+  - given-names: Nicolas
+    family-names: Reategui
+  - given-names: Susanne
+    family-names: Keller
+  - given-names: Jaivardhan
+    family-names: Kapoor
+  - given-names: Alex
+    family-names: Gilbert

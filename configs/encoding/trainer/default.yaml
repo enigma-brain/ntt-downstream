@@ -1,0 +1,112 @@
+# @package _global_
+
+# Global RNG seed for lightning.seed_everything (mirrors decode's top-level
+# `seed`). Lives here because trainer/default.yaml is the one config group
+# every encode recipe composes (- trainer: default), so this surfaces as a
+# top-level cfg.seed across all recipes. The CLI's promoted --seed maps to
+# `seed=<v>`.
+seed: 42
+
+trainer:
+  lr: 1e-3
+  backbone_lr_multiplier: 1.0
+  max_steps: 100000
+  n_epochs: null
+  max_epochs: null
+  precision: "bf16-mixed"
+  gradient_clipping: 1.0
+  gradient_accumulation_steps: 1
+  weight_decay: 0.01
+  betas: [ 0.9, 0.999 ]
+  eps: 1e-8
+  dtype: "bfloat16"
+  amp: true
+  compile: false
+
+  scheduler:
+    T_max: ${trainer.max_steps}
+    eta_min: 1e-5
+    warmup_steps: 1000 # linear warmup from ~0 to base LR
+
+  eval_skip_seconds: 0.0 # skip the first N seconds of the response during correlation eval (e.g. 0.05 for V4 latency)
+  eval_end_seconds: null # truncate response window at this time (null = use full trace). E.g., 0.150 for 150ms.
+  eval_rebin_hz: 200 # rebin predictions & targets to this rate before eval (null = native resolution)
+  eval_max_batches_train: 50 # limit train-set eval to N batches for speed
+  eval_max_batches_val_avg: null # limit repeat-averaged val eval (null = full pass, 0 = disable)
+  eval_max_batches_latent_quality: 20 # batches for latent-quality eval in non-MAR generative modes
+  eval_max_batches_nc_r2: 200 # batches for noise-corrected R² eval (0 to disable)
+
+  # Resume training from a Lightning checkpoint. Path passed straight to
+  # Trainer.fit(ckpt_path=...). null = train from scratch.
+  resume_from_ckpt: null
+
+  # Defensive periodic checkpoint, independent of validation cadence. With
+  # check_val_every_n_epoch > 1, the validation-driven checkpoint can be
+  # hours away — set this so a crash before first val is still recoverable.
+  # null disables.
+  save_every_n_train_steps: 6000
+
+  # MLflow + TensorBoard logging. Set logging=false to run with no MLflow at
+  # all (no tracking server needed); the results record is still written.
+  # The URI defaults to null when MLFLOW_TRACKING_URI is unset so the config
+  # always resolves (the results record stores the resolved config); with
+  # logging=true and no URI, train.py stops before training with a clear error.
+  logging: true
+  experiment_name: "cowley-v4-encoding"
+  mlflow_tracking_uri: ${oc.env:MLFLOW_TRACKING_URI,null}
+  logging_frequency_loss: 50
+  logging_frequency_validation: 1.0 # int is n steps, float is epoch fraction
+  check_val_every_n_epoch: null
+  num_sanity_val_steps: null
+
+  # Staged warmup: use a simpler loss for the first N steps to pre-train the
+  # readout before switching to model.loss_mode (e.g. warmup with "mse" then
+  # switch to "diffusion"). null = disabled.
+  warmup_loss_mode: null
+  warmup_steps: 0
+
+  # Smoke-test / debug overrides (null = not forwarded to Lightning Trainer)
+  limit_train_batches: null
+  limit_val_batches: null
+  strategy: null
+  log_every_n_steps: null # if null, logging_frequency_loss is used
+
+  tokenizer_mode: "frozen" # "frozen", "trainable", or "finetune_decoder"
+  tokenizer_aux_loss_weight: 0.0
+  decoder_recon_loss_weight: 0.0 # lambda for reconstruction loss through decoder (0 = disabled)
+  decoder_recon_loss_mode: "poisson" # "poisson" or "mse"
+  decoder_lr: null # learning rate for decoder params (null = base_lr * 0.1)
+
+  tokenizer_eval:
+    enabled: true
+    sample_temperature: 1.0
+    flow_solver: "euler"
+    n_flow_steps: 5
+
+  mar_eval:
+    n_mar_steps: 8
+    n_flow_steps: 5
+    temperature: 1.0
+    flow_solver: "euler"
+
+  # End-of-training final evaluation (loss-mode-aware rate prediction +
+  # per-session/overall metric table). Runs once on rank 0 after fit completes,
+  # using the last.ckpt weights. Disable with enabled=false.
+  final_eval:
+    enabled: true
+    n_samples: 32          # MC samples for stochastic generative modes (flow, diffusion, energy, MAR, CE Q>1)
+    flow_solver: "heun"    # ODE solver for flow_matching / MAR
+    n_flow_steps: null     # null -> use trainer.tokenizer_eval.n_flow_steps
+    test: true             # also score the (val-selected) checkpoint on the test split -> "test" block
+
+  # Pre-fit tokenizer-ceiling diagnostic: short encode->decode_differentiable
+  # roundtrip on a slice of the val set, logged to MLflow at step 0. Runs once
+  # on rank 0 only when a tokenizer is in use. Skipped silently for
+  # poisson / mse_rate runs and on resume from checkpoint.
+  startup_roundtrip:
+    enabled: true
+    max_batches: 20
+    # When true, a degenerate/non-finite tokenizer reconstruction (a broken
+    # tokenizer) raises and aborts the run before training, instead of only
+    # logging a warning. Off by default so the diagnostic never blocks a run.
+    strict: false

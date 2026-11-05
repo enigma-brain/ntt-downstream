@@ -1,0 +1,64 @@
+name: build_env_run_tests
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+permissions:
+    contents: read
+
+# A newer push to the same PR supersedes its running checks; pushes to main all run.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Lint, type checking and tests are separate jobs, so a lint or type error does not
+# stop the tests from running (and each failure shows up on its own). The shared
+# setup lives in .github/actions/setup-env.
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - uses: ./.github/actions/setup-env
+
+            - name: Run ruff (linting)
+              run: uv run --frozen ruff check .
+
+            - name: Run ruff (formatting)
+              run: uv run --frozen ruff format --check .
+
+    typecheck:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - uses: ./.github/actions/setup-env
+
+            - name: Run type checking
+              run: uv run --frozen pyright
+
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - uses: ./.github/actions/setup-env
+
+            - name: Run tests
+              run: uv run --frozen pytest --cov=src/ntt_downstream --cov-report=xml --cov-report=term-missing
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v6
+              with:
+                  files: ./coverage.xml
+                  fail_ci_if_error: false
+
+    pre-commit:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - uses: ./.github/actions/setup-env
+
+            - name: Run pre-commit
+              run: uv run --frozen pre-commit run --all-files --show-diff-on-failure

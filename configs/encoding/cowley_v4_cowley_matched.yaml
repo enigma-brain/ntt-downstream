@@ -1,0 +1,35 @@
+defaults:
+  - data: cowley_v4
+  - backbone: hiera_pretrained_224
+  - model: image_encoding
+  - trainer: default
+  - _self_
+
+# Match Cowley et al. 2026 training procedure:
+# - Scalar spike count per neuron (single time bin covering 50-150ms post-stimulus)
+# - Train on trial-averaged responses
+# - MSE loss
+# - Evaluate with noise-corrected R²
+data:
+  response_offset: 0.050 # skip first 50ms (V4 neural latency)
+  response_window: 0.100 # 100ms window → covers 50-150ms post-stimulus
+  bin_size: 0.100 # bin_size = response_window → T=1 (scalar rate)
+  train_on_averaged: true # train on trial-averaged responses
+  min_snr: 0.15 # match Cowley et al. SNR threshold (Pospisil & Bair 2021)
+
+model:
+  loss_mode: "mse_rate"
+  response_zscore: true # match Cowley et al.: z-score per neuron so all contribute equal gradients
+
+trainer:
+  eval_skip_seconds: 0.0 # latency skip handled at data level via response_offset
+  eval_rebin_hz: null # no rebinning needed (T=1)
+
+tokenizer:
+  enabled: false
+
+tags:
+  model: "hiera_small_cowley_matched"
+  dataset: "cowley_v4"
+
+description: "Cowley-matched baseline: scalar rates (50-150ms), trial-averaged training, MSE loss."

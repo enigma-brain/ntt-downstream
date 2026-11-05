@@ -1,0 +1,25 @@
+# @package _global_
+model:
+  model_type: "conv_core_readout"
+  image_size: [112, 112]
+
+  # Core: stacked 2D convolutions
+  hidden_channels: [16, 32, 64]
+  spatial_kernel_sizes: [13, 13, 13]
+  gamma_input: 0.1 # spatial Laplace regularization on first layer
+  gamma_hidden: 0.005 # group sparsity regularization on hidden layers
+  input_padding: 0 # no padding on first conv (shrinks spatial dims)
+  hidden_padding: 0 # maintain spatial dims in deeper layers
+  core_dropout: 0.1
+
+  # Readout: per-session Gaussian mask
+  readout_scale: true
+  readout_bias: true
+  readout_gaussian_mean_scale: 6.0
+  readout_gaussian_var_scale: 4.0
+  readout_positive: false
+  readout_mask_l1_reg: 0.025
+  readout_feature_l1_reg: 0.025
+
+  # Loss (only mse_rate supported; temporal prediction not yet implemented)
+  loss_mode: "mse_rate"

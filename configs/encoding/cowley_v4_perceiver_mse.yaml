@@ -1,0 +1,46 @@
+defaults:
+  - data: cowley_v4
+  - backbone: hiera_pretrained_224
+  - model: image_encoding
+  - trainer: default
+  - _self_
+
+# Pepe-only: the NuCLR embeddings file covers the 30 Cowley V4 Pepe sessions
+# and none of the Raul/Wakko sessions, so the subject set is restricted.
+data:
+  subjects: Pepe
+  response_window: 0.200
+  bin_size: 0.001
+  image_size: [224, 224]  # Hiera pretrained 224 backbone
+
+tokenizer:
+  enabled: true
+  checkpoint_first: true
+  # Perceiver tokenizer checkpoint: local .ckpt path or MLflow artifact URI.
+  checkpoint_path: ???
+  # NuCLR unit-embeddings file used by the perceiver tokenizer.
+  embeddings_path: ???
+  # Per-channel z-score of tokenizer latents keeps the MSE balanced across the
+  # 16 per-token feature dims (std≈0.01 on raw latents would otherwise need a
+  # large LR scale on the prediction head).
+  latent_scale: "auto_per_channel"
+  # latent_layout ∈ {"m_as_spatial", "m_flat"}
+  #   - m_as_spatial → unified (B, S=M=16, T=L, D=C=16)
+  #   - m_flat       → unified (B, S=1,  T=L, D=M*C=256)
+  latent_layout: "m_as_spatial"
+
+model:
+  loss_mode: "mse"
+  # Compress-n tiling params — the model's readout needs to know the latent
+  # geometry to size its queries. These must match the wrapper's unified
+  # layout exactly. For m_as_spatial: S = 16, T_coarse = T_target = 20 (bins
+  # at 10 ms), D = 16. For m_flat: set S=1 and D=256 via an override below.
+  compress_n_latent_n: 16
+  compress_n_t_coarse: 20
+  compress_n_t_target: 20
+
+tags:
+  model: "hiera_perceiver_mse"
+  dataset: "cowley_v4"
+
+description: "Cowley V4 Pepe + PerceiverTokenizer K9_M16_ld16 + MSE on latents."

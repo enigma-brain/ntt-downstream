@@ -1,0 +1,20 @@
+# @package _global_
+data:
+  dataset_path: "./data/cowley_v4_compact_2024"
+  response_window: 0.100 # duration of response window in seconds
+  bin_size: 0.100 # 100ms bins → 1 time bin
+  response_offset: 0.050 # seconds from stimulus onset to start of response window (0 = onset)
+  train_on_averaged: true # train on trial-averaged responses
+  author_split: null # null = all sessions, or "train"/"val"/"test"
+  session_ids: null # null = all sessions, or list of session IDs
+  subjects: null # null = all subjects, or "Pepe" / ["Raul", "Wakko"] to filter by animal
+  image_size: null # null = native 112x112, or [224, 224] for pretrained backbone
+  min_snr: 0.15 # match Cowley et al. SNR threshold (Pospisil & Bair 2021)
+
+# Note: this config uses all sessions, not only the original authors' training sessions.
+
+dataloader:
+  batch_size: 64
+  num_workers: 4
+  prefetch_factor: 2
+  persistent_workers: true

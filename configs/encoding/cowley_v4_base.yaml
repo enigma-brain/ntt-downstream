@@ -1,0 +1,15 @@
+defaults:
+  - data: cowley_v4
+  - backbone: hiera_small_112
+  - model: image_encoding
+  - trainer: default
+  - _self_
+
+tokenizer:
+  enabled: false
+
+tags:
+  model: "hiera_small_poisson"
+  dataset: "cowley_v4"
+
+description: "Cowley V4 baseline: small Hiera from scratch at 112x112, Poisson NLL loss."

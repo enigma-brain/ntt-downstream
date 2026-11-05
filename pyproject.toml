@@ -1,0 +1,183 @@
+[project]
+name = "ntt-downstream"
+version = "0.1.0"
+description = "Downstream tasks with ntt tokenizers"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "LICENSES/*"]
+requires-python = ">=3.13"
+authors = [{ name = "Enigma", email = "dev@enigma-brain.com" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "ntt",
+    "torch_brain",
+    # Pinned to match flash-attn's prebuilt-wheel matrix (the only torch
+    # versions with a cu12 + py313 + abi=TRUE flash-attn 2.8.3 wheel are
+    # 2.5/2.7/2.8). This also keeps `torch.version.cuda` ≤ the system
+    # nvcc's major (CUDA 12.x), which the cpp_extension build check
+    # requires for any future flash-attn builds from source.
+    "torch==2.8.0+cu126",
+    "flash-attn==2.8.3",
+    # encoding-side direct imports (decoding gets most of its deps
+    # transitively via ntt/torch_brain; encoding has a few extras).
+    "timm",            # hiera backbone: timm.layers.{DropPath, Mlp}
+    "tensorboard",     # TensorBoardLogger backend in src/ntt_downstream/encoding/train.py
+    "mlflow",          # MLFlowLogger + mlflow.artifacts in tokenizer wrapper
+    "h5py",            # wingert dataloader reads HDF5 sessions
+    "scipy",           # eval metrics + dataloading utilities
+    "jaxtyping",       # type-checked tensor shapes
+    "rootutils",       # scripts/encoding/* anchor on .project-root
+    "matplotlib",      # ntt_downstream.encoding.models.enc.viz
+    "plotly>=6.0.0",   # tokenizer radar plots (encoding.analysis.radar)
+    "ipywidgets>=8.0.0",  # interactive radar plots in notebooks
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+    "pre-commit>=3.0.0",
+    "ipykernel>=6.25.0",
+    "jupyter>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/enigma-brain/ntt-downstream"
+Repository = "https://github.com/enigma-brain/ntt-downstream"
+
+[project.scripts]
+ntt-downstream-decode = "ntt_downstream.cli.app:decode_cli"
+ntt-downstream-encode = "ntt_downstream.cli.app:encode_cli"
+ntt-downstream-calibrate = "ntt_downstream.cli.app:calibrate_cli"
+ntt-downstream-benchmark = "ntt_downstream.cli.app:benchmark_cli"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+    "pre-commit>=3.0.0",
+    "ipykernel>=6.25.0",
+    "jupyter>=1.0.0",
+]
+
+[tool.uv]
+package = true
+# `ntt` transitively pulls in the `pytorch-brain` PyPI dist, whose wheel omits
+# `torch_brain.dataset` (its pyproject leaves that package out of the packages
+# list). The dist is suppressed with an impossible marker and `torch_brain` is
+# taken from the upstream `main` branch instead.
+override-dependencies = [
+    "pytorch-brain; python_version > '99'",
+    # vector-quantize-pytorch (transitive via ntt) requires einops>=0.8, but
+    # torch_brain pins einops<0.7. Match ntt's own override to stay on 0.6.x.
+    "einops>=0.6.0,<0.7",
+]
+
+[tool.uv.sources]
+ntt = { git = "https://github.com/enigma-brain/ntt.git", tag = "v0.1.0" }
+torch_brain = { git = "https://github.com/neuro-galaxy/torch_brain.git", branch = "main" }
+# torch 2.8.0 cu12 wheels live on the PyTorch index; the +cu126 variant is
+# pulled from cu126/. Direct URL keeps it reproducible across machines.
+torch = [
+    { index = "pytorch-cu126" },
+]
+flash-attn = { url = "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3%2Bcu12torch2.8cxx11abiTRUE-cp313-cp313-linux_x86_64.whl" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "F722", # syntax error in forward declaration
+    "E201", # whitespace after '('
+    "E202", # whitespace before ')'
+    "E203", # whitespace before ':'
+    "E402", # module level import not at top of file
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["B018", "F401", "F811"]
+# torchtyping shape annotations (`TensorType["batch", "n_in", int]`) put dimension
+# names in string literals, which pyflakes reads as forward references to undefined
+# names. Both files mirror upstream torch_brain's POYO, so keep the annotations as-is.
+"src/ntt_downstream/decoding/backends/poyo/model.py" = ["F821"]
+"src/ntt_downstream/decoding/backends/poyo/poyo.py" = ["F821"]
+
+[tool.pyright]
+include = ["src"]
+exclude = ["**/node_modules", "**/__pycache__"]
+reportMissingImports = false
+reportMissingTypeStubs = false
+pythonVersion = "3.13"
+pythonPlatform = "Linux"
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src/ntt_downstream",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-branch",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

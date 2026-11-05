@@ -1,0 +1,146 @@
+{
+  "kind": "run",
+  "metadata": {
+    "checkpoint": {},
+    "config": {
+      "tokenizer": {
+        "checkpoint_path": "mlflow-artifacts:/1/abc/artifacts/model.ckpt",
+        "enabled": true
+      }
+    },
+    "final_eval": {
+      "status": "ok"
+    },
+    "git_sha": "fixture-git-sha",
+    "hostname": "fixture-host",
+    "mlflow_run_id": null,
+    "n_sessions": 1,
+    "ntt_commit": "0000000000000000000000000000000000000000",
+    "ntt_path": "/fixture/ntt/src/ntt/__init__.py",
+    "ntt_version": "0.0.0-fixture",
+    "run_name": "fixture_run",
+    "sessions": [
+      "PE_201021"
+    ],
+    "timestamp": "2026-01-01T00:00:00Z",
+    "tokenizer_checkpoint": "mlflow-artifacts:/1/abc/artifacts/model.ckpt"
+  },
+  "metrics": {
+    "test": {
+      "aggregated": {
+        "nc_r2": {
+          "aggregated_over": "sessions:mean_of_means",
+          "direction": "higher",
+          "n": 1,
+          "std": 0.01,
+          "value": 0.19,
+          "value_range": [
+            null,
+            1.0
+          ]
+        },
+        "rate_pearson": {
+          "aggregated_over": "sessions:mean_of_means",
+          "direction": "higher",
+          "n": 1,
+          "std": 0.01,
+          "value": 0.28,
+          "value_range": [
+            -1.0,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "PE_201021": {
+          "nc_r2": 0.19,
+          "rate_pearson": 0.28
+        }
+      }
+    },
+    "val_best": {
+      "aggregated": {
+        "nc_r2": {
+          "direction": "higher",
+          "value": 0.22,
+          "value_range": [
+            null,
+            1.0
+          ]
+        },
+        "rate_corr": {
+          "direction": "higher",
+          "value": 0.31,
+          "value_range": [
+            -1.0,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "PE_201021": {
+          "rate_corr": 0.31
+        }
+      }
+    },
+    "val_final": {
+      "aggregated": {
+        "nc_r2": {
+          "aggregated_over": "sessions:mean_of_means",
+          "direction": "higher",
+          "n": 1,
+          "std": 0.01,
+          "value": 0.21,
+          "value_range": [
+            null,
+            1.0
+          ]
+        },
+        "rate_pearson": {
+          "aggregated_over": "sessions:mean_of_means",
+          "direction": "higher",
+          "n": 1,
+          "std": 0.01,
+          "value": 0.3,
+          "value_range": [
+            -1.0,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "PE_201021": {
+          "nc_r2": 0.21,
+          "rate_pearson": 0.3
+        }
+      }
+    },
+    "val_last": {
+      "aggregated": {
+        "nc_r2": {
+          "direction": "higher",
+          "value": 0.2,
+          "value_range": [
+            null,
+            1.0
+          ]
+        },
+        "rate_corr": {
+          "direction": "higher",
+          "value": 0.29,
+          "value_range": [
+            -1.0,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "PE_201021": {
+          "rate_corr": 0.29
+        }
+      }
+    }
+  },
+  "schema_version": 2,
+  "task": "encoding"
+}

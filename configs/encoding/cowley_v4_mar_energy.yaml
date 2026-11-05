@@ -1,0 +1,28 @@
+defaults:
+  - data: cowley_v4
+  - backbone: hiera_pretrained_224
+  - model: image_encoding_mar_energy
+  - trainer: default
+  - _self_
+
+tokenizer:
+  enabled: true
+  checkpoint_first: true
+  # Continuous-latent conv tokenizer checkpoint (conv-*): local .ckpt path or MLflow artifact URI.
+  checkpoint_path: ???
+  # Per-channel z-scoring of tokenizer latents. Required for the L2-distance
+  # energy score so high-variance latent dims don't dominate the gradient.
+  latent_scale: "auto_per_channel"
+
+trainer:
+  # EAR paper Sec. 4.3: MLP generator requires a lower LR than the rest of the
+  # model to stabilize training. lambda = 0.25 is the paper default.
+  energy_lr_multiplier: 0.25
+  # Uncomment and set an absolute energy_lr to override the multiplier.
+  # energy_lr: 2.5e-5
+
+tags:
+  model: "hiera_small_mar_energy"
+  dataset: "cowley_v4"
+
+description: "MAR + EAR energy-score model on Cowley V4."

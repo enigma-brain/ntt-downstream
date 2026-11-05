@@ -1,0 +1,7 @@
+# Fake tokenizer: reproduces the original POYO computation through the bypass path.
+mode: fake
+unit_embedding_mode: add
+sentinels: true
+ntt_tokenizer: null
+ntt_checkpoint: null
+poisson_rate_bin_ms: 100.0

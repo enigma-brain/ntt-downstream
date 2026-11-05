@@ -1,0 +1,44 @@
+# Data hparams for the single-session calibration sweep
+# (calibration_general_singlesession.sbatch).
+#
+# Read by the orchestration engine (`orchestration calibrate`); the session
+# lists below are defaults, overridable via the CLI (--data-root,
+# --train-sessions, --other-sessions).
+
+data_root: ./data/processed
+
+# Brainset queried during the per-session valid-trial preflight. Files
+# resolve to ${data_root}/${brainset}/${session}.h5.
+brainset: perich_miller_population_2018
+
+# `temporal_split.enabled=false` is passed to every train.py call: the
+# baked HDF5 random ~70/10/20 split is the source of truth for this
+# calibration. Flipping this on would change the train/val/test domains
+# and break comparability across cells.
+temporal_split_enabled: false
+
+# Tier 1 (xtime val) sessions to base-train on. The default pairs one
+# tier 1 center_out and one tier 1 random_target session — both with
+# n_valid_trials ≥ ⌈86/0.7⌉ ≈ 123 so the full n_trials=86 calibration is
+# unclamped. Other tier 1 alternates that meet the size floor:
+#   m_20140214_random_target_reaching, m_20150511_center_out_reaching.
+train_sessions:
+  - c_20151103_center_out_reaching
+  - c_20131217_random_target_reaching
+
+
+other_sessions:
+  # --- Tier 1 (xtime val: same train sessions, held-out time slice) ---
+  - c_20151103_center_out_reaching
+  - c_20131217_random_target_reaching
+  - m_20140214_random_target_reaching
+  - m_20150511_center_out_reaching
+
+  # --- Tier 2 (xsession val: same subjects, different sessions) ---
+  # Chosen so that n_train reaches 86 without clamping.
+  - c_20151104_center_out_reaching
+
+  # --- Tier 3 (xsubject val/test: different subjects entirely) ---
+  - j_20160406_center_out_reaching                  # val
+  - t_20130822_random_target_reaching               # val
+  - t_20130820_random_target_reaching               # test

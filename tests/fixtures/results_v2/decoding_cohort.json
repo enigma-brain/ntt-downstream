@@ -1,0 +1,131 @@
+{
+  "kind": "cohort",
+  "metadata": {
+    "checkpoint": {},
+    "cohort": {
+      "children": {
+        "c_20131003_center_out_reaching": {
+          "git_sha": "fixture-git-sha",
+          "mlflow_run_id": null,
+          "ntt_commit": "0000000000000000000000000000000000000000",
+          "ntt_version": "0.0.0-fixture",
+          "record_path": "T__tokA__c_20131003_center_out_reaching/csv_logs/version_0/downstream_decoding_results.json",
+          "run_name": null
+        },
+        "t_20130819_center_out_reaching": {
+          "git_sha": "fixture-git-sha",
+          "mlflow_run_id": null,
+          "ntt_commit": "0000000000000000000000000000000000000000",
+          "ntt_version": "0.0.0-fixture",
+          "record_path": "T__tokA__t_20130819_center_out_reaching/csv_logs/version_0/downstream_decoding_results.json",
+          "run_name": null
+        }
+      },
+      "complete": true,
+      "expected": [
+        "c_20131003_center_out_reaching",
+        "t_20130819_center_out_reaching"
+      ],
+      "found": [
+        "c_20131003_center_out_reaching",
+        "t_20130819_center_out_reaching"
+      ],
+      "missing": [],
+      "mixed_provenance": false,
+      "not_before": null,
+      "stale": []
+    },
+    "config": {},
+    "git_sha": "fixture-git-sha",
+    "hostname": "fixture-host",
+    "mlflow_run_id": "fixture-parent-run",
+    "n_sessions": 2,
+    "ntt_commit": "0000000000000000000000000000000000000000",
+    "ntt_path": "/fixture/ntt/src/ntt/__init__.py",
+    "ntt_version": "0.0.0-fixture",
+    "run_name": "tokA__cohort",
+    "sessions": [
+      "c_20131003_center_out_reaching",
+      "t_20130819_center_out_reaching"
+    ],
+    "timestamp": "2026-01-01T00:00:00Z",
+    "tokenizer_checkpoint": "mlflow-artifacts:/1/abc/artifacts/model.ckpt",
+    "tokenizer_name": "tokA"
+  },
+  "metrics": {
+    "test": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.8300000000000001,
+          "n": 2,
+          "std": 0.028284271247461846,
+          "value": 0.8300000000000001,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "c_20131003_center_out_reaching": {
+          "r2": 0.85
+        },
+        "t_20130819_center_out_reaching": {
+          "r2": 0.81
+        }
+      }
+    },
+    "val_best": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.86,
+          "n": 2,
+          "std": 0.0,
+          "value": 0.86,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "c_20131003_center_out_reaching": {
+          "r2": 0.86
+        },
+        "t_20130819_center_out_reaching": {
+          "r2": 0.86
+        }
+      }
+    },
+    "val_last": {
+      "aggregated": {
+        "r2": {
+          "aggregated_over": "sessions:mean",
+          "direction": "higher",
+          "median": 0.84,
+          "n": 2,
+          "std": 0.0,
+          "value": 0.84,
+          "value_range": [
+            null,
+            1.0
+          ]
+        }
+      },
+      "per_session": {
+        "c_20131003_center_out_reaching": {
+          "r2": 0.84
+        },
+        "t_20130819_center_out_reaching": {
+          "r2": 0.84
+        }
+      }
+    }
+  },
+  "schema_version": 2,
+  "task": "decoding"
+}

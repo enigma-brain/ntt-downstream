@@ -1,0 +1,44 @@
+# @package _global_
+model:
+    model_type: "audio_encoding"
+
+    # Backbone
+    conv_rank: 48
+    conv_kernel_size: 7
+    conv_dilations: [1, 2, 4, 8]
+
+    # Windowing — should match tokenizer_window_length_seconds when tokenizer is active
+    window_size: 10
+
+    # Self-attention over windows
+    n_self_attn_layers: 2
+    n_self_attn_heads: 4
+    rope_max_seq_len: 512
+
+    # Cross-attention readout
+    dim_head: 48
+    num_heads: 4
+    readout_mlp_ratio: 4
+    readout_use_subject_embedding: true
+
+    # Regularization
+    dropout: 0.1
+
+    # Output activation (disabled for tokenizer modes)
+    learnable_softplus: false
+    softplus_beta: 1.0
+
+    # Loss — override per experiment
+    loss_mode: "mse_latent"
+
+    # token_prediction_dim is auto-derived from tokenizer spec
+    token_prediction_dim: null
+
+    # Tokenizer-loss head settings (override per experiment)
+    diffusion_batch_mul: 1
+    tokenizer_aux_loss_weight: 0.0
+    # Deep output head — on by default. See audio_encoding.yaml for details.
+    deep_token_head: true
+    deep_token_head_depth: 2
+    deep_token_head_width_mult: 2.0
+    deep_token_head_use_film: true

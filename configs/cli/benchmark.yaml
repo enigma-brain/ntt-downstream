@@ -1,0 +1,79 @@
+# Curated benchmark sweep entrypoint — the tokenizer×session grid + engine knobs
+# as data.
+#
+# This is FLAT config data, not a Hydra-composed tree: unlike configs/cli/{decode,
+# encode}.yaml there is NO `defaults:` list. Each benchmark cell subprocesses
+# `python -m ntt_downstream.decoding.train`, which composes configs/decoding/ on
+# its own — so this file only carries the *sweep* surface (grid + engine knobs).
+#
+# The sweep launcher (src/ntt_downstream/cli/sweeps.py) reads this, overlays
+# the CLI's promoted flags, and builds an `argparse.Namespace` that it feeds
+# VERBATIM to the existing orchestration engine: `run_benchmark(ns)`
+# (src/ntt_downstream/decoding/orchestration.py).
+#
+# KEY NAMES ARE ENGINE ARGPARSE DESTS
+# -----------------------------------
+# Every top-level key below IS an orchestration argparse dest, verbatim — the
+# engine's parser is the single source of truth for the key set, and unknown
+# keys are rejected at load (exit 2). Promoted-flag overlay for benchmark:
+#   --tokenizer-name → tokenizers (one-element cohort filter)
+#   --seed → seed (int)   --data-root → data_root
+#   --tokenizer-ckpt / --tokenizer-kind are intentionally IGNORED (a single
+#   ckpt/kind can't parameterize a discovered cohort).
+#
+# NULL-FALLBACK SEMANTICS
+# -----------------------
+# Unlike calibrate, `run_benchmark` does NOT read the per-mode training YAML; it
+# reads args directly, with literal Python fallbacks applied inline when an arg
+# is None. The fields below therefore mirror those argparse dests, carrying the
+# SAME literal defaults `run_benchmark` would otherwise apply, so the resolved
+# plan is identical whether a value comes from this YAML or the inline fallback.
+# `null` for a field means "let `run_benchmark` apply its inline default":
+#   tokenizers   null → auto-discover model.ckpt dirs under ckpt_root
+#   ckpt_root    null → <repo_root>/results/tokenizer_checkpoints
+#   sessions     null → data_config's other_sessions
+#   model_cfg    null → poyo_1.3M_no_crossattn (or poyo_1.3M when spike_times_only)
+#   comparison_tag null → tok_bench_<YYYYMMDD>
+#   repo_root    null → cwd
+#   data_root    null → data_config's data_root
+# The remaining fields carry their literal defaults explicitly for discoverability.
+
+# ── tokenizer cohort (promoted CLI flags overlay cleanly) ────────────────────
+tokenizers: null         # space-separated names; null → auto-discover under ckpt_root
+tokenizers_limit: 0      # cap the discovered/explicit cohort (int; 0 = no cap)
+ckpt_root: null          # frozen-tokenizer ckpt root; null → repo_root/results/tokenizer_checkpoints
+
+# ── grid ─────────────────────────────────────────────────────────────────────
+sessions: null           # eval sessions; null → data_config's other_sessions
+seed: 42                 # single benchmark seed (int)
+
+# ── decode data config selection ─────────────────────────────────────────────
+data_config: configs/decoding/single_session/data_benchmark.yaml
+
+# ── cohort composition (spike_times vs frozen) ───────────────────────────────
+include_spike_times: false  # add a spike_times baseline cell alongside frozen tokenizers
+spike_times_only: false     # baseline mode: spike_times only, skip frozen discovery
+                            # (implies include_spike_times; flips model_cfg default to poyo_1.3M)
+
+# ── model / tokenizer wiring (literal benchmark defaults) ────────────────────
+model_cfg: null             # null → poyo_1.3M_no_crossattn (poyo_1.3M when spike_times_only)
+unit_embedding_mode: add
+sentinels: false            # true|false
+
+# ── training schedule (literal benchmark defaults) ───────────────────────────
+epochs: 400                 # int
+batch_size: 128             # int
+num_workers: 8              # int
+# precision/force_flash_attn are fixed in run_benchmark (bf16-mixed / true) and
+# are not exposed as sweep knobs — intentionally omitted.
+
+# ── identity / common / MLflow ───────────────────────────────────────────────
+comparison_tag: null        # null → tok_bench_<YYYYMMDD>
+repo_root: null             # null → cwd
+data_root: null             # null → data_config's data_root
+gpus: null                  # space-separated indices; null → nvidia-smi auto
+mlflow: auto                # auto|true|false; auto = on iff MLFLOW_TRACKING_URI is set
+mlflow_experiment_name: ntt-eval-poyo
+mlflow_log_model: false     # true|false
+extra: null                 # raw Hydra overrides appended to every train.py call
+dry_run: false              # resolve + print the plan without executing

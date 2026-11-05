@@ -1,0 +1,52 @@
+# @package _global_
+# Multi-session base-train preset for the calibration_multi orchestrator.
+#
+# Activates train.py's multi-session path (cfg.dataset is set) without
+# requiring a checked-in `${ntt_split:...}` selection list. The actual
+# train sessions are passed in by the orchestrator via:
+#
+#   +data=calibration_multi_base \
+#     _train_sessions_list=[s1,s2,s3,s4]
+#
+# Tier wiring mirrors `data/ntt_reaching_strict.yaml` but only the
+# tier1_val (xtime) selection is populated — the calibration sweep runs
+# its own per-session FT/eval downstream, so cross-session/cross-subject
+# tiers are unnecessary at base-train time. The remaining tier slots are
+# explicit `null`s so multi_session_setup._build_tier_specs's
+# `entry is None` short-circuit fires (instead of an AttributeError on a
+# missing key).
+#
+# `temporal_split` is intentionally NOT overridden here. The multi
+# orchestrator passes `temporal_split.enabled=$TEMPORAL_SPLIT_ENABLED`
+# at invocation time (default false → HDF5-baked random ~70/10/20 split),
+# matching the single-session calibration's split source for head-to-head
+# comparability.
+
+restrict_brainsets: [perich_miller_population_2018]
+# `co_only: false` is required: the matched-trials 8-session set (and
+# therefore any train pool drawn from it) intentionally spans both
+# `_center_out_reaching` and `_random_target_reaching` sessions. The
+# global default in defaults.yaml is `co_only: true`, which would
+# silently drop every random-target entry from `_train_sessions_list`
+# (and from tier1_val) and shrink the multi-session pool with no error.
+co_only: false
+
+_train_sessions_list: ???
+
+dataset:
+  - selection:
+      - brainset: perich_miller_population_2018
+        sessions: ${_train_sessions_list}
+
+tiers:
+  enabled: true
+  tier1_val:
+    selection:
+      - selection:
+          - brainset: perich_miller_population_2018
+            sessions: ${_train_sessions_list}
+    split: valid
+  tier2_val: null
+  tier2_test: null
+  tier3_val: null
+  tier3_test: null

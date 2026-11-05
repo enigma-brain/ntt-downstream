@@ -1,0 +1,24 @@
+# Frozen-tokenizer variant for the calibration orchestrator.
+#
+# Inherits all shared hparams from training.yaml; only the variant-specific
+# differences are listed below.
+
+extends: training.yaml
+
+model:
+  # Frozen-tokenizer calibration is wired up around the no-crossattention
+  # POYO; flipping this off is rejected by the orchestration engine.
+  no_crossattn: true
+
+training:
+  ft_max_steps: 800
+  base_max_steps: 3400
+  seeds: [42, 43]
+
+tokenizer:
+  # Frozen NTT tokenizer (e.g. VAE / LDNS); requires a CKPT at
+  # invocation time.
+  kind: frozen
+  # Frozen-tokenizer runs explicitly disable sentinels (every train.py call
+  # gets `tokenizer.sentinels=false`).
+  sentinels: false

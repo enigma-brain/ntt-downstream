@@ -1,0 +1,31 @@
+defaults:
+  - data: cowley_v4
+  - backbone: hiera_small_112
+  - model: image_encoding_mar
+  - trainer: default
+  - _self_
+
+tokenizer:
+  enabled: true
+  checkpoint_first: true
+  spec:
+    _target_: ntt.contrib.tokenizer.compressed_sensing.CompressedSensingTokenizerSpec
+    KIND: compressed_sensing
+    n_neurons: 100
+    window_length_seconds: 0.5
+    bin_size_ms: 1.0
+    latent_dim: 36
+    trainable: false
+    random_seed: 0
+    shuffling_strategy: "none"
+    sampling_strategy: "uniform"
+    compress_mode: "per_neuron"
+    matrix_type: "sinusoidal"
+    sinusoidal_base: 150
+    sinusoidal_norm: true
+
+tags:
+  model: "hiera_small_mar_flow"
+  dataset: "cowley_v4"
+
+description: "MAR model with flow matching on Cowley V4."

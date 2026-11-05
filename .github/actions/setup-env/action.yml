@@ -1,0 +1,25 @@
+name: Set up project environment
+description: >
+  Install Python + uv and sync the locked environment (with the dev extra).
+
+inputs:
+  python-version:
+    description: Python version to install.
+    default: "3.13"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      shell: bash
+      run: uv sync --locked --extra dev

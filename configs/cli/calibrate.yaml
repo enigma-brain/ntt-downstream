@@ -1,0 +1,108 @@
+# Curated calibrate sweep entrypoint — the sweep grid + engine knobs as data.
+#
+# This is FLAT config data, not a Hydra-composed tree: unlike configs/cli/{decode,
+# encode}.yaml there is NO `defaults:` list. Each training cell subprocesses
+# `python -m ntt_downstream.decoding.train`, which composes configs/decoding/ on
+# its own — so this file only carries the *sweep* surface (grid + engine knobs),
+# never the deep decode/data tree.
+#
+# The sweep launcher (src/ntt_downstream/cli/sweeps.py) reads this, overlays
+# the CLI's promoted flags, and builds an `argparse.Namespace` that it feeds
+# VERBATIM to the existing orchestration engine:
+# `_resolve_calibrate(ns)` → `run_calibrate(cfg)`
+# (src/ntt_downstream/decoding/orchestration.py).
+#
+# KEY NAMES ARE ENGINE ARGPARSE DESTS
+# -----------------------------------
+# Every top-level key below IS an orchestration argparse dest, verbatim — the
+# engine's parser is the single source of truth for the key set, and unknown
+# keys are rejected at load (exit 2). The only renames happen on the
+# promoted-flag side of the overlay:
+#   --tokenizer-kind → tokenizer_kind   --tokenizer-ckpt → ckpt
+#   --tokenizer-name → tokenizer_name   --output-root    → calib_root
+#   --seed           → seeds (one-element list)
+#
+# NULL-FALLBACK SEMANTICS
+# -----------------------
+# `_resolve_calibrate` resolves each field via `_pick(flag, yaml_default)` =
+# "the CLI flag wins when it is not None, else the per-mode decode YAML default".
+# Those deep defaults are read from
+#   configs/decoding/{single_session,multi_session}/tokenizer_training.yaml  (TRAINING_KEYS)
+#   configs/decoding/{single_session,multi_session}/data.yaml                (DATA_KEYS)
+# Therefore a field carried here as `null` means "fall back to the decode
+# training/data YAML default" — we deliberately do NOT duplicate those deep
+# defaults. The fields are listed explicitly (as `null`) only so the sweep
+# surface is discoverable in one place; the launcher maps `null` → Namespace
+# attr None.
+#
+# The genuinely non-null engine knobs below (jobs_per_gpu, missing_only,
+# reuse_base_if_exists, skip_base_train, multi_session, hydra_data_config) are
+# real orchestrator behavior that does NOT live in the decode YAMLs, so they
+# carry their argparse literal defaults here.
+
+# ── tokenizer (the promoted --tokenizer-* flags overlay these) ───────────────
+# null → falls back to TOKENIZER_KIND / (no ckpt) / derived name in the decode
+# training YAML. `tokenizer_kind=frozen` requires a `ckpt` and `no_crossattn=true`.
+tokenizer_kind: null  # frozen|spike_times; null → TOKENIZER_KIND
+ckpt: null            # tokenizer ckpt (path or mlflow-artifacts:/ URI); required when kind=frozen
+tokenizer_name: null  # null → derived from ckpt path (frozen) or = kind (spike_times)
+
+# ── sweep grid ───────────────────────────────────────────────────────────────
+# All null → fall back to the decode training/data YAML grid (SEEDS,
+# TRAIN/OTHER_SESSIONS, FT_TRIAL_COUNTS, FT_MODES).
+seeds: null           # e.g. [0, 1, 2]
+train_sessions: null  # base-train pool; multi_session needs >=2
+other_sessions: null  # calibration (fine-tune/eval) sessions
+ft_trial_counts: null # per-session FT trial counts (0 always added; clamped to floor(0.7*n_valid))
+ft_modes: null        # subset of {unit_identification, full}
+
+# ── GPU pool / scheduling ────────────────────────────────────────────────────
+gpus: null            # space-separated indices; null → nvidia-smi auto
+jobs_per_gpu: 1        # concurrent cells per GPU (int)
+
+# ── idempotence / base-ckpt reuse (engine behavior, not in decode YAMLs) ─────
+missing_only: true            # skip cells whose run_result.json is already complete
+reuse_base_if_exists: true    # reuse a fully-trained base ckpt instead of retraining
+skip_base_train: false        # use a supplied base_ckpt instead of training a base
+base_ckpt: null               # required when skip_base_train=true
+
+# ── single- vs multi-session base train ──────────────────────────────────────
+multi_session: false                         # joint base-train over the whole pool (queue = seeds)
+hydra_data_config: calibration_multi_base    # Hydra data preset wired with the train pool (multi-session base train)
+
+# ── decode config selection (null → per-mode defaults under configs/decoding) ─
+training_config: null   # null → configs/decoding/{single,multi}_session/tokenizer_training.yaml
+data_config: null       # null → configs/decoding/{single,multi}_session/data.yaml
+
+# ── model / tokenizer wiring (null → decode training YAML) ───────────────────
+model_cfg: null              # MODEL_SIZE: 1.3M|11.8M (→ poyo_* arch + variant)
+no_crossattn: null           # true|false; frozen requires true
+unit_embedding_mode: null    # e.g. add|none
+sentinels: null              # true|false
+
+# ── training schedule (null → decode training YAML) ──────────────────────────
+batch_size: null
+num_workers: null
+base_max_steps: null         # base-train step budget
+ft_max_steps: null           # fine-tune step budget
+num_latents_per_step: null   # crossattn-only; ignored when no_crossattn=true
+eval_every_n_steps: null
+ckpt_every_n_steps: null
+ft_eval_every: null
+ft_ckpt_every: null
+precision: null
+force_flash_attn: null       # true|false
+temporal_split_enabled: null # true|false
+brainset: null               # data subdir under data_root (preflight HDF5 lookup)
+
+# ── output root (output_root CLI flag is promoted onto this) ─────────────────
+calib_root: null             # null → CALIB_ROOT from decode training YAML
+
+# ── common / MLflow ──────────────────────────────────────────────────────────
+repo_root: null              # null → cwd
+data_root: null              # null → DATA_ROOT from decode data YAML
+mlflow: null                 # auto|true|false; null → MLFLOW_ENABLED from decode YAML
+mlflow_experiment_name: null # null → MLFLOW_EXPERIMENT_NAME from decode YAML
+mlflow_log_model: null       # true|false; null → MLFLOW_LOG_MODEL from decode YAML
+extra: null                  # raw Hydra overrides appended to every train.py call
+dry_run: false               # resolve + print the plan without executing

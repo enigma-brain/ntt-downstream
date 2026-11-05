@@ -1,0 +1,20 @@
+defaults:
+  - data: wingert_auditory
+  - backbone: causal_conv
+  - model: audio_encoding
+  - trainer: default
+  - _self_
+
+tokenizer:
+  enabled: false
+
+tags:
+  model: "audio_poisson"
+  dataset: "wingert_auditory"
+
+trainer:
+  experiment_name: "wingert-auditory-encoding"
+  eval_skip_seconds: 0.0
+  eval_rebin_hz: null
+
+description: "Wingert auditory cortex baseline: CausalConv + cross-attention, Poisson NLL loss."
